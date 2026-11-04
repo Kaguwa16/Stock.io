@@ -1969,70 +1969,81 @@
 
     window.handleProductSubmit = async function(e) {
       e.preventDefault();
-      const editDocId = document.getElementById('editDocId')?.value;
-      const sku = document.getElementById('prodSku')?.value.trim();
-      const name = document.getElementById('prodName')?.value.trim().toUpperCase();
-      const category = document.getElementById('prodCategory')?.value;
-      const hpp = parseFloat(document.getElementById('prodHpp')?.value) || 0;
-      const price = parseFloat(document.getElementById('prodPrice')?.value) || 0;
-      const stock = parseInt(document.getElementById('prodStock')?.value, 10) || 0;
-      const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
-      let brand = document.getElementById('prodBrand')?.value.trim();
-      if (!brand) brand = getBrandName(name);
+        const editDocId = document.getElementById('editDocId')?.value;
+        const sku = document.getElementById('prodSku')?.value.trim();
+        const name = document.getElementById('prodName')?.value.trim().toUpperCase();
+        const category = document.getElementById('prodCategory')?.value;
+        const hpp = parseFloat(document.getElementById('prodHpp')?.value) || 0;
+        const price = parseFloat(document.getElementById('prodPrice')?.value) || 0;
+        const stock = parseInt(document.getElementById('prodStock')?.value, 10) || 0;
+        const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
+        let brand = document.getElementById('prodBrand')?.value.trim();
+        if (!brand) brand = getBrandName(name);
 
-      if (editDocId) {
-        const item = products.find(p => p.docId === editDocId);
-        if (item) {
-          item.id = sku;
-          item.name = name;
-          item.category = category;
-          item.brand = brand;
-          item.hpp = hpp;
-          item.price = price;
-          item.stock = stock;
-          item.minStock = minStock;
+        // Buat ID dokumen yang konsisten berdasarkan SKU agar bisa dihapus dengan benar
+        const stableDocId = `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-          if (!isOfflineFallbackMode && db) {
+        if (editDocId) {
+          const item = products.find(p => p.docId === editDocId);
+          if (item) {
+            item.id = sku;
+            item.name = name;
+            item.category = category;
+            item.brand = brand;
+            item.hpp = hpp;
+            item.price = price;
+            item.stock = stock;
+            item.minStock = minStock;
+
+            if (!isOfflineFallbackMode && db) {
             try {
-              await updateDoc(doc(db, 'artifacts', appId, 'public_products_v7', editDocId), { id: sku, name, category, brand, hpp, price, stock, minStock });
+            await setDoc(doc(db, 'artifacts', appId, 'public_products_v7', editDocId), { id: sku, name, category, brand, hpp, price, stock, minStock }, { merge: true });
             } catch(err) {
-              activateLocalStorageFallbackMode();
-            }
-          }
-          saveLocalStorageFallback();
-          window.showToast(`Produk ${name} berhasil diperbarui`, 'success');
-        }
-      } else {
-        const newDocId = `prod-${Date.now()}`;
-        const newProd = {
-          docId: newDocId,
-          id: sku,
-          name: name,
-          category: category,
-          brand: brand,
-          hpp: hpp,
-          price: price,
-          stock: stock,
-          minStock: minStock,
-          unit: 'Pcs',
-          outgoing: 0,
-          supplierDamaged: 0,
-          shippingDamaged: 0
-        };
-        products.unshift(newProd);
-
-        if (!isOfflineFallbackMode && db) {
-          try {
-            await addDoc(collection(db, 'artifacts', appId, 'public_products_v7'), newProd);
-          } catch(err) {
             activateLocalStorageFallbackMode();
           }
         }
-        saveLocalStorageFallback();
-        window.showToast(`Produk ${name} ditambahkan`, 'success');
+      saveLocalStorageFallback();
+      window.showToast(`Produk ${name} berhasil diperbarui`, 'success');
+    }
+  } else {
+    const newProd = {
+      docId: stableDocId,
+      id: sku,
+      name: name,
+      category: category,
+      brand: brand,
+      hpp: hpp,
+      price: price,
+      stock: stock,
+      minStock: minStock,
+      unit: 'Pcs',
+      outgoing: 0,
+      supplierDamaged: 0,
+      shippingDamaged: 0
+    };
+    
+    // Cek apakah produk dengan SKU tersebut sudah ada di local array
+    const existingIndex = products.findIndex(p => p.id === sku);
+    if (existingIndex >= 0) {
+      products[existingIndex] = newProd;
+    } else {
+      products.unshift(newProd);
+    }
+
+    if (!isOfflineFallbackMode && db) {
+      try {
+        // Gunakan setDoc dengan stableDocId agar ID di Firestore sama persis
+        await setDoc(doc(db, 'artifacts', appId, 'public_products_v7', stableDocId), newProd);
+      } catch(err) {
+        activateLocalStorageFallbackMode();
+      }
+      }
+      saveLocalStorageFallback();
+      window.showToast(`Produk ${name} ditambahkan`, 'success');
       }
 
       window.closeModal('productModal');
+      refreshDashboardData();
     };
 
     window.confirmDeleteProduct = async function() {
