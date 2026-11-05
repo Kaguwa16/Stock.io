@@ -2206,36 +2206,50 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Toko / Admin</title>
-  <!-- CSS atau CDN lain milik Anda -->
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
 
-  <!-- KONTEN DASHBOARD ANDA YANG SEKARANG -->
-  <div class="container">
-    <h1>Selamat Datang di Dashboard</h1>
-    <!-- Tabel, Form, dll -->
-    
-    <!-- Tombol Logout (Opsional, letakkan di navbar atau sidebar) -->
-    <button id="logoutBtn" class="btn-danger">Keluar (Logout)</button>
+  <!-- KONTEN DASHBOARD ANDA -->
+  <div class="max-w-7xl mx-auto p-6">
+    <div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-6 shadow-lg">
+      <h1 class="text-xl font-bold text-white">Selamat Datang di Dashboard</h1>
+      <!-- Tombol Logout -->
+      <button id="logoutBtn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-medium rounded-xl transition text-sm cursor-pointer">
+        Keluar (Logout)
+      </button>
+    </div>
+
+    <!-- Area Konten Utama / Tabel / Form Anda -->
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
+      <p class="text-slate-400">Sistem keamanan aktif. Data Anda terlindungi oleh Firebase Authentication.</p>
+    </div>
   </div>
 
- const firebaseConfig = {
-  apiKey: "AIzaSyCpkSNCxVKr7pQz6mKZKqlJGz4-k6pMCMQ",
-  authDomain: "monitor-stock-1dab6.firebaseapp.com",
-  projectId: "monitor-stock-1dab6",
-  storageBucket: "monitor-stock-1dab6.firebasestorage.app",
-  messagingSenderId: "28635188865",
-  appId: "1:28635188865:web:3921fbe9c21f4c4d0bc780",
-  measurementId: "G-KE8B9FG4H8"
-};
-
+  <!-- Skrip Firebase & Proteksi Sesi Auth (Modular SDK v11) -->
   <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js";
-    
-    const auth = getAuth();
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-    // 1. Cek apakah user sudah login atau belum
+    // Konfigurasi Firebase Project Anda
+    const firebaseConfig = {
+      apiKey: "AIzaSyCpkSNCxVKr7pQz6mKZKqlJGz4-k6pMCMQ",
+      authDomain: "monitor-stock-1dab6.firebaseapp.com",
+      projectId: "monitor-stock-1dab6",
+      storageBucket: "monitor-stock-1dab6.firebasestorage.app",
+      messagingSenderId: "28635188865",
+      appId: "1:28635188865:web:3921fbe9c21f4c4d0bc780",
+      measurementId: "G-KE8B9FG4H8"
+    };
+
+    // 1. Inisialisasi Firebase App
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 2. Cek apakah user sudah login atau belum
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // Sesi aktif, user diizinkan melihat halaman ini
@@ -2246,7 +2260,7 @@
       }
     });
 
-    // 2. Fungsi tombol Logout
+    // 3. Fungsi tombol Logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
