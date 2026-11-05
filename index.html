@@ -1909,8 +1909,15 @@
         const qtyGood = parseInt(document.getElementById('transQtyGood')?.value, 10) || 0;
         const qtySupplierDamaged = parseInt(document.getElementById('transQtySupplierDamaged')?.value, 10) || 0;
 
-        if (qtyGood === 0 && qtySupplierDamaged === 0) {
-          window.showToast('Masukkan kuantitas stok bagus atau barang pecah supplier!', 'warning');
+        const qtyGood = totalPhysical - qtySupplierDamaged;
+
+        if (qtyGood < 0) {
+          window.showToast('Jumlah pecah tidak boleh lebih besar dari total barang datang!', 'error');
+          return;
+        }
+
+        if (totalPhysical === 0 && qtySupplierDamaged === 0) {
+          window.showToast('Masukkan kuantitas barang datang atau pecah!', 'warning');
           return;
         }
 
