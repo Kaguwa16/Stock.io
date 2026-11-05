@@ -1888,95 +1888,95 @@
     };
 
     window.handleTransactionSubmit = async function(e) {
-  e.preventDefault();
-  const docId = document.getElementById('transProductSelect')?.value;
-  const type = document.querySelector('input[name="transType"]:checked')?.value;
+      e.preventDefault();
+        const docId = document.getElementById('transProductSelect')?.value;
+        const type = document.querySelector('input[name="transType"]:checked')?.value;
 
-  const product = products.find(p => p.docId === docId);
-  if (!product) return;
+        const product = products.find(p => p.docId === docId);
+        if (!product) return;
 
-  let newStock = Number(product.stock);
-  let newSupplierDamaged = Number(product.supplierDamaged || 0);
-  let newShippingDamaged = Number(product.shippingDamaged || 0);
-  let newOutgoing = Number(product.outgoing || 0);
+        let newStock = Number(product.stock);
+        let newSupplierDamaged = Number(product.supplierDamaged || 0);
+        let newShippingDamaged = Number(product.shippingDamaged || 0);
+        let newOutgoing = Number(product.outgoing || 0);
 
-  if (type === 'IN') {
-    const qtyGood = parseInt(document.getElementById('transQtyGood')?.value, 10) || 0;
-    const qtySupplierDamaged = parseInt(document.getElementById('transQtySupplierDamaged')?.value, 10) || 0;
+        if (type === 'IN') {
+        const qtyGood = parseInt(document.getElementById('transQtyGood')?.value, 10) || 0;
+        const qtySupplierDamaged = parseInt(document.getElementById('transQtySupplierDamaged')?.value, 10) || 0;
 
-    if (qtyGood === 0 && qtySupplierDamaged === 0) {
-      window.showToast('Masukkan kuantitas stok bagus atau barang pecah supplier!', 'warning');
-      return;
-    }
+        if (qtyGood === 0 && qtySupplierDamaged === 0) {
+        window.showToast('Masukkan kuantitas stok bagus atau barang pecah supplier!', 'warning');
+        return;
+      }
 
-    newStock += qtyGood;
-    newSupplierDamaged += qtySupplierDamaged;
+        newStock += qtyGood;
+        newSupplierDamaged += qtySupplierDamaged;
 
-    product.stock = newStock;
-    product.supplierDamaged = newSupplierDamaged;
+        product.stock = newStock;
+        product.supplierDamaged = newSupplierDamaged;
 
-    // SIMPAN KE CLOUD (Ganti updateDoc satuan dengan saveStateToCloud)
-    await saveStateToCloud();
-    saveLocalStorageFallback();
+        // SIMPAN KE CLOUD (Ganti updateDoc satuan dengan saveStateToCloud)
+        await saveStateToCloud();
+        saveLocalStorageFallback();
 
-    window.closeModal('transactionModal');
-    document.getElementById('transactionForm')?.reset();
-    window.showToast(`Kulakan Tercatat: +${qtyGood} Stok Bagus, ${qtySupplierDamaged} Pecah Supplier`, 'success');
+        window.closeModal('transactionModal');
+        document.getElementById('transactionForm')?.reset();
+        window.showToast(`Kulakan Tercatat: +${qtyGood} Stok Bagus, ${qtySupplierDamaged} Pecah Supplier`, 'success');
 
-  } else {
-    const reason = document.getElementById('transOutReason')?.value;
-    const qtyOut = parseInt(document.getElementById('transQtyOut')?.value, 10) || 0;
+      } else {
+      const reason = document.getElementById('transOutReason')?.value;
+      const qtyOut = parseInt(document.getElementById('transQtyOut')?.value, 10) || 0;
 
-    if (qtyOut <= 0) {
+      if (qtyOut <= 0) {
       window.showToast('Masukkan kuantitas keluar yang valid!', 'warning');
       return;
     }
 
-    if (qtyOut > newStock) {
+      if (qtyOut > newStock) {
       window.showToast(`Stok layak tidak cukup! Sisa stok saat ini: ${newStock} Pcs`, 'error');
       return;
     }
 
-    newStock -= qtyOut;
-    if (reason === 'NORMAL') {
-      newOutgoing += qtyOut;
-      window.showToast(`Penjualan Tercatat: -${qtyOut} Pcs ${product.name}`, 'warning');
+      newStock -= qtyOut;
+      if (reason === 'NORMAL') {
+        newOutgoing += qtyOut;
+        window.showToast(`Penjualan Tercatat: -${qtyOut} Pcs ${product.name}`, 'warning');
     } else {
       newShippingDamaged += qtyOut;
       window.showToast(`Record Kerusakan Transit: ${qtyOut} Pcs ${product.name} (Retur Uang)`, 'error');
     }
 
-    product.stock = newStock;
-    product.outgoing = newOutgoing;
-    product.shippingDamaged = newShippingDamaged;
+      product.stock = newStock;
+      product.outgoing = newOutgoing;
+      product.shippingDamaged = newShippingDamaged;
 
-    // SIMPAN KE CLOUD (Ganti updateDoc satuan dengan saveStateToCloud)
-    await saveStateToCloud();
-    saveLocalStorageFallback();
+      // SIMPAN KE CLOUD (Ganti updateDoc satuan dengan saveStateToCloud)
+      await saveStateToCloud();
+      saveLocalStorageFallback();
 
-    window.closeModal('transactionModal');
-    document.getElementById('transactionForm')?.reset();
-  }
-};
+      window.closeModal('transactionModal');
+      document.getElementById('transactionForm')?.reset();
+    }
+  };
 
     window.handleProductSubmit = async function(e) {
-  e.preventDefault();
-  const editDocId = document.getElementById('editDocId')?.value;
-  const sku = document.getElementById('prodSku')?.value.trim();
-  const name = document.getElementById('prodName')?.value.trim().toUpperCase();
-  const category = document.getElementById('prodCategory')?.value;
-  const hpp = parseFloat(document.getElementById('prodHpp')?.value) || 0;
-  const price = parseFloat(document.getElementById('prodPrice')?.value) || 0;
-  const stock = parseInt(document.getElementById('prodStock')?.value, 10) || 0;
-  const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
-  let brand = document.getElementById('prodBrand')?.value.trim();
-  if (!brand) brand = getBrandName(name);
+      e.preventDefault();
+        const editDocId = document.getElementById('editDocId')?.value;
+        const sku = document.getElementById('prodSku')?.value.trim();
+        const name = document.getElementById('prodName')?.value.trim().toUpperCase();
+        const category = document.getElementById('prodCategory')?.value;
+        const hpp = parseFloat(document.getElementById('prodHpp')?.value) || 0;
+        const price = parseFloat(document.getElementById('prodPrice')?.value) || 0;
+        const stock = parseInt(document.getElementById('prodStock')?.value, 10) || 0;
+        const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
+        let brand = document.getElementById('prodBrand')?.value.trim();
+        if (!brand) brand = getBrandName(name);
 
-  const stableDocId = `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const stableDocId = `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-  if (editDocId) {
-    const item = products.find(p => p.docId === editDocId);
-    if (item) {
+      if (editDocId) {
+        const item = products.find(p => p.docId === editDocId);
+      if (item) {
       item.id = sku;
       item.name = name;
       item.category = category;
