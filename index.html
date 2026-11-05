@@ -2037,44 +2037,44 @@ window.confirmDeleteProduct = async function() {
   window.showToast("Produk berhasil dihapus permanen", "success");
 };
 
-window.handleAddExpense = async function(e) {
-  e.preventDefault();
-  const category = document.getElementById('expCategory')?.value || 'OPERASIONAL';
-  const name = document.getElementById('expName')?.value.trim();
-  const amount = parseFloat(document.getElementById('expAmount')?.value) || 0;
+  window.handleAddExpense = async function(e) {
+    e.preventDefault();
+      const category = document.getElementById('expCategory')?.value || 'OPERASIONAL';
+      const name = document.getElementById('expName')?.value.trim();
+      const amount = parseFloat(document.getElementById('expAmount')?.value) || 0;
 
-  if (!name || amount <= 0) {
+       if (!name || amount <= 0) {
     window.showToast('Mohon masukkan nama biaya dan nominal yang valid!', 'warning');
     return;
-  }
+    }
 
-  const newExp = {
-    docId: `exp-${Date.now()}`,
-    category: category,
-    name: name,
-    amount: amount,
-    date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+    const newExp = {
+      docId: `exp-${Date.now()}`,
+      category: category,
+      name: name,
+      amount: amount,
+      date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+    };
+      expenses.push(newExp);
+
+      // Simpan state ke cloud
+      await saveStateToCloud();
+      saveLocalStorageFallback();
+
+      window.closeModal('expenseModal');
+      document.getElementById('expenseForm')?.reset();
+      window.showToast('Biaya pengeluaran tersimpan', 'success');
+    };
+
+  window.deleteExpense = async function(docId) {
+    expenses = expenses.filter(e => e.docId !== docId);
+
+    // Simpan state ke cloud
+    await saveStateToCloud();
+    saveLocalStorageFallback();
+
+    window.showToast('Catatan biaya dihapus', 'info');
   };
-  expenses.push(newExp);
-
-  // Simpan state ke cloud
-  await saveStateToCloud();
-  saveLocalStorageFallback();
-
-  window.closeModal('expenseModal');
-  document.getElementById('expenseForm')?.reset();
-  window.showToast('Biaya pengeluaran tersimpan', 'success');
-};
-
-window.deleteExpense = async function(docId) {
-  expenses = expenses.filter(e => e.docId !== docId);
-
-  // Simpan state ke cloud
-  await saveStateToCloud();
-  saveLocalStorageFallback();
-
-  window.showToast('Catatan biaya dihapus', 'info');
-};
 
 window.togglePasswordVisibility = function(inputId, iconId) {
   const input = document.getElementById(inputId);
