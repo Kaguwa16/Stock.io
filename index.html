@@ -1774,48 +1774,51 @@
 
     window.handleAddCategory = async function(e) {
       e.preventDefault();
-      const input = document.getElementById('newCategoryInput');
-      const catName = input?.value.trim();
+        const input = document.getElementById('newCategoryInput');
+        const catName = input?.value.trim();
 
-      if (!catName) return;
-      if (categories.some(c => c.toLowerCase() === catName.toLowerCase())) {
-        window.showToast(`Kategori "${catName}" sudah ada!`, 'warning');
-        return;
-      }
+        if (!catName) return;
+        if (categories.some(c => c.toLowerCase() === catName.toLowerCase())) {
+      window.showToast(`Kategori "${catName}" sudah ada!`, 'warning');
+      return;
+    }
 
       categories.push(catName);
-      if (!isOfflineFallbackMode && db) {
-        await setDoc(doc(db, 'artifacts', appId, 'public_config_v7', 'settings'), {
-          categories: categories,
-          activePeriodName: activePeriodName
-        }, { merge: true }).catch(() => {});
-      }
+
+      // SIMPAN KE CLOUD MENGGUNAKAN SINGLE DOCUMENT STATE
+      await saveStateToCloud();
       saveLocalStorageFallback();
 
       if (input) input.value = '';
-      window.showToast(`Kategori baru "${catName}" ditambahkan`, 'success');
-      window.closeModal('categoryModal');
-    };
+    window.showToast(`Kategori baru "${catName}" ditambahkan`, 'success');
+    window.closeModal('categoryModal');
+  
+      // Refresh tampilan dropdown dan list manajemen kategori
+      renderCategoryDropdowns();
+      renderCategoryManagementList();
+  };
 
-    window.deleteCategory = async function(index) {
-      const catToDelete = categories[index];
-      const isInUse = products.some(p => p.category === catToDelete);
+  window.deleteCategory = async function(index) {
+    const catToDelete = categories[index];
+    const isInUse = products.some(p => p.category === catToDelete);
 
-      if (isInUse) {
-        window.showToast(`Kategori "${catToDelete}" sedang digunakan oleh produk!`, 'error');
-        return;
-      }
+    if (isInUse) {
+      window.showToast(`Kategori "${catToDelete}" sedang digunakan oleh produk!`, 'error');
+      return;
+    }
 
-      categories.splice(index, 1);
-      if (!isOfflineFallbackMode && db) {
-        await setDoc(doc(db, 'artifacts', appId, 'public_config_v7', 'settings'), {
-          categories: categories,
-          activePeriodName: activePeriodName
-        }, { merge: true }).catch(() => {});
-      }
-      saveLocalStorageFallback();
-      window.showToast(`Kategori "${catToDelete}" berhasil dihapus`, 'info');
-    };
+    categories.splice(index, 1);
+
+    // SIMPAN KE CLOUD MENGGUNAKAN SINGLE DOCUMENT STATE
+    await saveStateToCloud();
+    saveLocalStorageFallback();
+
+    window.showToast(`Kategori "${catToDelete}" berhasil dihapus`, 'info');
+  
+    // Refresh tampilan dropdown dan list manajemen kategori
+    renderCategoryDropdowns();
+    renderCategoryManagementList();
+  };
 
     window.toggleTransFields = function() {
       const type = document.querySelector('input[name="transType"]:checked')?.value;
