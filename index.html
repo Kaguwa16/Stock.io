@@ -1168,7 +1168,7 @@
         };
 
            await setDoc(storeRef, initialState);
-          } catch (err) {
+         } catch (err) {
            console.warn("Gagal seeding default state:", err);
            activateLocalStorageFallbackMode();
         }
