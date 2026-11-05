@@ -1167,10 +1167,11 @@
           updatedAt: new Date().toISOString()
         };
 
-        await setDoc(storeRef, initialState);
-        } catch (err) {
-        activateLocalStorageFallbackMode();
-      }
+           await setDoc(storeRef, initialState);
+          } catch (err) {
+           console.warn("Gagal seeding default state:", err);
+           activateLocalStorageFallbackMode();
+        }
     }
 
      async function saveStateToCloud() {
