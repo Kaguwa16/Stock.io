@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Dashboard</title>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Login Dashboard</h2>
+    <form id="loginForm">
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" required placeholder="email@domain.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" required placeholder="********">
+      </div>
+      <button type="submit" id="loginBtn">Masuk</button>
+    </form>
+  </div>
+
+  <!-- Skrip Login -->
+  <script type="module">
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-auth.js";
+    // Impor inisialisasi firebase Anda di sini jika terpisah (misal: import { auth } from './firebase-config.js';)
+    
+    const auth = getAuth();
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+      
+      btn.textContent = "Memproses...";
+      btn.disabled = true;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Login Berhasil:", userCredential.user.email);
+        
+        // Alihkan ke halaman dashboard setelah sukses
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        console.error("Error login:", error.code, error.message);
+        
+        let pesanError = "Gagal login. Periksa kembali email dan password Anda.";
+        if (error.code === 'auth/invalid-credential') pesanError = "Email atau password salah.";
+        
+        alert(pesanError); // Atau gunakan fungsi toast Anda
+        btn.textContent = "Masuk";
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
