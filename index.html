@@ -1119,84 +1119,78 @@
     function initCloudSync() {
       if (!currentUser || !db) return;
 
-      const productsRef = collection(db, 'artifacts', appId, 'public_products_v7');
-      onSnapshot(productsRef, (snapshot) => {
-        products = [];
-        snapshot.forEach(docSnap => {
-          products.push({ docId: docSnap.id, ...docSnap.data() });
-        });
-
-        if (products.length === 0) {
-          seedDefaultProducts();
-        } else {
-          refreshDashboardData();
-        }
-      }, (error) => {
-        console.warn("Firestore permission restricted, switching to local storage fallback mode:", error);
-        activateLocalStorageFallbackMode();
-      });
-
-      const metaRef = doc(db, 'artifacts', appId, 'public_config_v7', 'settings');
-      onSnapshot(metaRef, (docSnap) => {
+      const storeRef = doc(db, 'artifacts', appId, 'dashboard_store', 'main_state');
+  
+      onSnapshot(storeRef, (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.categories) categories = data.categories;
-          if (data.activePeriodName) activePeriodName = data.activePeriodName;
+        const data = docSnap.data();
+        products = data.products || [];
+        categories = data.categories || ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"];
+        expenses = data.expenses || [];
+        monthlyArchives = data.monthlyArchives || [];
+        activePeriodName = data.activePeriodName || "November 2026";
         } else {
-          setDoc(metaRef, { categories: categories, activePeriodName: activePeriodName }).catch(() => {});
+        seedDefaultState(storeRef);
         }
-        renderCategoryDropdowns();
-        renderCategoryManagementList();
         refreshDashboardData();
-      }, () => {});
-
-      const expensesRef = collection(db, 'artifacts', appId, 'public_expenses_v7');
-      onSnapshot(expensesRef, (snapshot) => {
-        expenses = [];
-        snapshot.forEach(docSnap => {
-          expenses.push({ docId: docSnap.id, ...docSnap.data() });
+        }, (error) => {
+        console.warn("Firestore error, beralih ke mode offline:", error);
+        activateLocalStorageFallbackMode();
         });
-        refreshDashboardData();
-      }, () => {});
+      }
 
-      const archivesRef = collection(db, 'artifacts', appId, 'public_archives_v7');
-      onSnapshot(archivesRef, (snapshot) => {
-        monthlyArchives = [];
-        snapshot.forEach(docSnap => {
-          monthlyArchives.push({ docId: docSnap.id, ...docSnap.data() });
-        });
-        refreshDashboardData();
-      }, () => {});
-    }
-
-    async function seedDefaultProducts() {
+    async function seedDefaultState(storeRef) {
       if (!currentUser || !db || isOfflineFallbackMode) return;
-      try {
-        for (let index = 0; index < rawProductNames.length; index++) {
-          const name = rawProductNames[index];
-          const skuNumber = String(index + 1).padStart(3, '0');
-          const prodData = {
-            id: `TG-${skuNumber}`,
-            name: name,
-            category: 'Tempered Glass',
-            brand: getBrandName(name),
-            hpp: 0,
-            price: 0,
-            stock: 0,
-            minStock: 10,
-            unit: 'Pcs',
-            outgoing: 0,
-            supplierDamaged: 0,
-            shippingDamaged: 0
-          };
-          await addDoc(collection(db, 'artifacts', appId, 'public_products_v7'), prodData);
-        }
-      } catch (err) {
-        console.warn("Seeding seed error due to permissions, falling back:", err);
+        try {
+        const initialProducts = rawProductNames.map((name, index) => ({
+          docId: `prod_${index + 1}`,
+          id: `TG-${String(index + 1).padStart(3, '0')}`,
+          name: name,
+          category: 'Tempered Glass',
+          brand: getBrandName(name),
+          hpp: 0,
+          price: 0,
+          stock: 0,
+          minStock: 10,
+          unit: 'Pcs',
+          outgoing: 0,
+          supplierDamaged: 0,
+          shippingDamaged: 0
+        }));
+
+        const initialState = {
+          products: initialProducts,
+          categories: ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"],
+          expenses: [],
+          monthlyArchives: [],
+          activePeriodName: "November 2026",
+          updatedAt: new Date().toISOString()
+        };
+
+        await setDoc(storeRef, initialState);
+        } catch (err) {
         activateLocalStorageFallbackMode();
       }
     }
 
+     async function saveStateToCloud() {
+      if (isOfflineFallbackMode || !db || !currentUser) return;
+        try {
+        const storeRef = doc(db, 'artifacts', appId, 'dashboard_store', 'main_state');
+        await setDoc(storeRef, {
+          products: products,
+          categories: categories,
+          expenses: expenses,
+          monthlyArchives: monthlyArchives,
+          activePeriodName: activePeriodName,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+      console.error("Gagal menyimpan ke cloud:", err);
+      activateLocalStorageFallbackMode();
+      }
+    }
+    
     window.forceCloudRefresh = function() {
       refreshDashboardData();
       window.showToast("Data berhasil disinkronkan!", "success");
@@ -1894,125 +1888,105 @@
     };
 
     window.handleTransactionSubmit = async function(e) {
-      e.preventDefault();
-      const docId = document.getElementById('transProductSelect')?.value;
-      const type = document.querySelector('input[name="transType"]:checked')?.value;
+  e.preventDefault();
+  const docId = document.getElementById('transProductSelect')?.value;
+  const type = document.querySelector('input[name="transType"]:checked')?.value;
 
-      const product = products.find(p => p.docId === docId);
-      if (!product) return;
+  const product = products.find(p => p.docId === docId);
+  if (!product) return;
 
-      let newStock = Number(product.stock);
-      let newSupplierDamaged = Number(product.supplierDamaged || 0);
-      let newShippingDamaged = Number(product.shippingDamaged || 0);
-      let newOutgoing = Number(product.outgoing || 0);
+  let newStock = Number(product.stock);
+  let newSupplierDamaged = Number(product.supplierDamaged || 0);
+  let newShippingDamaged = Number(product.shippingDamaged || 0);
+  let newOutgoing = Number(product.outgoing || 0);
 
-      if (type === 'IN') {
-        const qtyGood = parseInt(document.getElementById('transQtyGood')?.value, 10) || 0;
-        const qtySupplierDamaged = parseInt(document.getElementById('transQtySupplierDamaged')?.value, 10) || 0;
+  if (type === 'IN') {
+    const qtyGood = parseInt(document.getElementById('transQtyGood')?.value, 10) || 0;
+    const qtySupplierDamaged = parseInt(document.getElementById('transQtySupplierDamaged')?.value, 10) || 0;
 
-        if (qtyGood === 0 && qtySupplierDamaged === 0) {
-          window.showToast('Masukkan kuantitas stok bagus atau barang pecah supplier!', 'warning');
-          return;
-        }
+    if (qtyGood === 0 && qtySupplierDamaged === 0) {
+      window.showToast('Masukkan kuantitas stok bagus atau barang pecah supplier!', 'warning');
+      return;
+    }
 
-        newStock += qtyGood;
-        newSupplierDamaged += qtySupplierDamaged;
+    newStock += qtyGood;
+    newSupplierDamaged += qtySupplierDamaged;
 
-        product.stock = newStock;
-        product.supplierDamaged = newSupplierDamaged;
+    product.stock = newStock;
+    product.supplierDamaged = newSupplierDamaged;
 
-        if (!isOfflineFallbackMode && db) {
-          try {
-            await updateDoc(doc(db, 'artifacts', appId, 'public_products_v7', docId), { stock: newStock, supplierDamaged: newSupplierDamaged });
-          } catch(err) {
-            activateLocalStorageFallbackMode();
-          }
-        }
-        saveLocalStorageFallback();
+    // SIMPAN KE CLOUD (Ganti updateDoc satuan dengan saveStateToCloud)
+    await saveStateToCloud();
+    saveLocalStorageFallback();
 
-        window.closeModal('transactionModal');
-        document.getElementById('transactionForm')?.reset();
-        window.showToast(`Kulakan Tercatat: +${qtyGood} Stok Bagus, ${qtySupplierDamaged} Pecah Supplier`, 'success');
+    window.closeModal('transactionModal');
+    document.getElementById('transactionForm')?.reset();
+    window.showToast(`Kulakan Tercatat: +${qtyGood} Stok Bagus, ${qtySupplierDamaged} Pecah Supplier`, 'success');
 
-      } else {
-        const reason = document.getElementById('transOutReason')?.value;
-        const qtyOut = parseInt(document.getElementById('transQtyOut')?.value, 10) || 0;
+  } else {
+    const reason = document.getElementById('transOutReason')?.value;
+    const qtyOut = parseInt(document.getElementById('transQtyOut')?.value, 10) || 0;
 
-        if (qtyOut <= 0) {
-          window.showToast('Masukkan kuantitas keluar yang valid!', 'warning');
-          return;
-        }
+    if (qtyOut <= 0) {
+      window.showToast('Masukkan kuantitas keluar yang valid!', 'warning');
+      return;
+    }
 
-        if (qtyOut > newStock) {
-          window.showToast(`Stok layak tidak cukup! Sisa stok saat ini: ${newStock} Pcs`, 'error');
-          return;
-        }
+    if (qtyOut > newStock) {
+      window.showToast(`Stok layak tidak cukup! Sisa stok saat ini: ${newStock} Pcs`, 'error');
+      return;
+    }
 
-        newStock -= qtyOut;
-        if (reason === 'NORMAL') {
-          newOutgoing += qtyOut;
-          window.showToast(`Penjualan Tercatat: -${qtyOut} Pcs ${product.name}`, 'warning');
-        } else {
-          newShippingDamaged += qtyOut;
-          window.showToast(`Record Kerusakan Transit: ${qtyOut} Pcs ${product.name} (Retur Uang)`, 'error');
-        }
+    newStock -= qtyOut;
+    if (reason === 'NORMAL') {
+      newOutgoing += qtyOut;
+      window.showToast(`Penjualan Tercatat: -${qtyOut} Pcs ${product.name}`, 'warning');
+    } else {
+      newShippingDamaged += qtyOut;
+      window.showToast(`Record Kerusakan Transit: ${qtyOut} Pcs ${product.name} (Retur Uang)`, 'error');
+    }
 
-        product.stock = newStock;
-        product.outgoing = newOutgoing;
-        product.shippingDamaged = newShippingDamaged;
+    product.stock = newStock;
+    product.outgoing = newOutgoing;
+    product.shippingDamaged = newShippingDamaged;
 
-        if (!isOfflineFallbackMode && db) {
-          try {
-            await updateDoc(doc(db, 'artifacts', appId, 'public_products_v7', docId), { stock: newStock, outgoing: newOutgoing, shippingDamaged: newShippingDamaged });
-          } catch(err) {
-            activateLocalStorageFallbackMode();
-          }
-        }
-        saveLocalStorageFallback();
+    // SIMPAN KE CLOUD (Ganti updateDoc satuan dengan saveStateToCloud)
+    await saveStateToCloud();
+    saveLocalStorageFallback();
 
-        window.closeModal('transactionModal');
-        document.getElementById('transactionForm')?.reset();
-      }
-    };
+    window.closeModal('transactionModal');
+    document.getElementById('transactionForm')?.reset();
+  }
+};
 
     window.handleProductSubmit = async function(e) {
-      e.preventDefault();
-        const editDocId = document.getElementById('editDocId')?.value;
-        const sku = document.getElementById('prodSku')?.value.trim();
-        const name = document.getElementById('prodName')?.value.trim().toUpperCase();
-        const category = document.getElementById('prodCategory')?.value;
-        const hpp = parseFloat(document.getElementById('prodHpp')?.value) || 0;
-        const price = parseFloat(document.getElementById('prodPrice')?.value) || 0;
-        const stock = parseInt(document.getElementById('prodStock')?.value, 10) || 0;
-        const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
-        let brand = document.getElementById('prodBrand')?.value.trim();
-        if (!brand) brand = getBrandName(name);
+  e.preventDefault();
+  const editDocId = document.getElementById('editDocId')?.value;
+  const sku = document.getElementById('prodSku')?.value.trim();
+  const name = document.getElementById('prodName')?.value.trim().toUpperCase();
+  const category = document.getElementById('prodCategory')?.value;
+  const hpp = parseFloat(document.getElementById('prodHpp')?.value) || 0;
+  const price = parseFloat(document.getElementById('prodPrice')?.value) || 0;
+  const stock = parseInt(document.getElementById('prodStock')?.value, 10) || 0;
+  const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
+  let brand = document.getElementById('prodBrand')?.value.trim();
+  if (!brand) brand = getBrandName(name);
 
-        // Buat ID dokumen yang konsisten berdasarkan SKU agar bisa dihapus dengan benar
-        const stableDocId = `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const stableDocId = `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-        if (editDocId) {
-          const item = products.find(p => p.docId === editDocId);
-          if (item) {
-            item.id = sku;
-            item.name = name;
-            item.category = category;
-            item.brand = brand;
-            item.hpp = hpp;
-            item.price = price;
-            item.stock = stock;
-            item.minStock = minStock;
-
-            if (!isOfflineFallbackMode && db) {
-            try {
-            await setDoc(doc(db, 'artifacts', appId, 'public_products_v7', editDocId), { id: sku, name, category, brand, hpp, price, stock, minStock }, { merge: true });
-            } catch(err) {
-            activateLocalStorageFallbackMode();
-          }
-        }
-      saveLocalStorageFallback();
-      window.showToast(`Produk ${name} berhasil diperbarui`, 'success');
+  if (editDocId) {
+    const item = products.find(p => p.docId === editDocId);
+    if (item) {
+      item.id = sku;
+      item.name = name;
+      item.category = category;
+      item.brand = brand;
+      item.hpp = hpp;
+      item.price = price;
+      item.stock = stock;
+      item.minStock = minStock;
     }
+    window.showToast(`Produk ${name} berhasil diperbarui`, 'success');
   } else {
     const newProd = {
       docId: stableDocId,
@@ -2030,184 +2004,151 @@
       shippingDamaged: 0
     };
     
-    // Cek apakah produk dengan SKU tersebut sudah ada di local array
-    const existingIndex = products.findIndex(p => p.id === sku);
+    const existingIndex = products.findIndex(p => p.id === sku || p.docId === stableDocId);
     if (existingIndex >= 0) {
       products[existingIndex] = newProd;
     } else {
       products.unshift(newProd);
     }
+    window.showToast(`Produk ${name} ditambahkan`, 'success');
+  }
 
-    if (!isOfflineFallbackMode && db) {
-      try {
-        // Gunakan setDoc dengan stableDocId agar ID di Firestore sama persis
-        await setDoc(doc(db, 'artifacts', appId, 'public_products_v7', stableDocId), newProd);
-      } catch(err) {
-        activateLocalStorageFallbackMode();
-      }
-      }
-      saveLocalStorageFallback();
-      window.showToast(`Produk ${name} ditambahkan`, 'success');
-      }
+  // Simpan seluruh state terbaru ke 1 dokumen cloud
+  await saveStateToCloud();
+  saveLocalStorageFallback();
 
-      window.closeModal('productModal');
-      refreshDashboardData();
-    };
+  window.closeModal('productModal');
+  refreshDashboardData();
+};
 
-      window.confirmDeleteProduct = async function() {
-      const docId = document.getElementById('deleteDocId')?.value;
-      if (!docId) return;
+window.confirmDeleteProduct = async function() {
+  const docId = document.getElementById('deleteDocId')?.value;
+  if (!docId) return;
 
-      if (!isOfflineFallbackMode && db) {
-        try {
-          // 1. Kirim perintah hapus ke server Cloud Firestore terlebih dahulu
-          await deleteDoc(doc(db, 'artifacts', appId, 'public_products_v7', docId));
-          window.showToast(`Produk berhasil dihapus permanen dari Cloud`, 'success');
-        } catch(err) {
-          // 2. Jika gagal di server, tampilkan error dan JANGAN hapus data lokal
-          console.error("Gagal menghapus dokumen di Firestore:", err);
-          window.showToast(`Gagal hapus di server: ${err.message}`, 'error');
-          window.closeModal('deleteModal');
-          return; // Hentikan eksekusi agar data tidak hilang di UI saja
-        }
-      }
+  // Hapus dari array lokal
+  products = products.filter(p => p.docId !== docId);
 
-      // 3. Hapus dari state lokal HANYA jika server sukses (atau mode offline aktif)
-      products = products.filter(p => p.docId !== docId);
+  // Simpan state terbaru ke 1 dokumen cloud
+  await saveStateToCloud();
+  saveLocalStorageFallback();
 
-      saveLocalStorageFallback();
-      window.closeModal('deleteModal');
-      refreshDashboardData();
-    };
+  window.closeModal('deleteModal');
+  refreshDashboardData();
+  window.showToast("Produk berhasil dihapus permanen", "success");
+};
 
-    window.handleAddExpense = async function(e) {
-      e.preventDefault();
-      const category = document.getElementById('expCategory')?.value || 'OPERASIONAL';
-      const name = document.getElementById('expName')?.value.trim();
-      const amount = parseFloat(document.getElementById('expAmount')?.value) || 0;
+window.handleAddExpense = async function(e) {
+  e.preventDefault();
+  const category = document.getElementById('expCategory')?.value || 'OPERASIONAL';
+  const name = document.getElementById('expName')?.value.trim();
+  const amount = parseFloat(document.getElementById('expAmount')?.value) || 0;
 
-      if (!name || amount <= 0) {
-        window.showToast('Mohon masukkan nama biaya dan nominal yang valid!', 'warning');
-        return;
-      }
+  if (!name || amount <= 0) {
+    window.showToast('Mohon masukkan nama biaya dan nominal yang valid!', 'warning');
+    return;
+  }
 
-      const newExp = {
-        docId: `exp-${Date.now()}`,
-        category: category,
-        name: name,
-        amount: amount,
-        date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-      };
-      expenses.push(newExp);
+  const newExp = {
+    docId: `exp-${Date.now()}`,
+    category: category,
+    name: name,
+    amount: amount,
+    date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+  };
+  expenses.push(newExp);
 
-      if (!isOfflineFallbackMode && db) {
-        try {
-          await addDoc(collection(db, 'artifacts', appId, 'public_expenses_v7'), newExp);
-        } catch(err) {
-          activateLocalStorageFallbackMode();
-        }
-      }
-      saveLocalStorageFallback();
+  // Simpan state ke cloud
+  await saveStateToCloud();
+  saveLocalStorageFallback();
 
-      window.closeModal('expenseModal');
-      document.getElementById('expenseForm')?.reset();
-      window.showToast('Biaya pengeluaran tersimpan', 'success');
-    };
+  window.closeModal('expenseModal');
+  document.getElementById('expenseForm')?.reset();
+  window.showToast('Biaya pengeluaran tersimpan', 'success');
+};
 
-    window.deleteExpense = async function(docId) {
-      expenses = expenses.filter(e => e.docId !== docId);
-      if (!isOfflineFallbackMode && db) {
-        try {
-          await deleteDoc(doc(db, 'artifacts', appId, 'public_expenses_v7', docId));
-        } catch(err) {
-          activateLocalStorageFallbackMode();
-        }
-      }
-      saveLocalStorageFallback();
-      window.showToast('Catatan biaya dihapus', 'info');
-    };
+window.deleteExpense = async function(docId) {
+  expenses = expenses.filter(e => e.docId !== docId);
 
-    window.togglePasswordVisibility = function(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
-      if (!input || !icon) return;
+  // Simpan state ke cloud
+  await saveStateToCloud();
+  saveLocalStorageFallback();
 
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-      }
-    };
+  window.showToast('Catatan biaya dihapus', 'info');
+};
 
-    window.confirmCloseMonth = async function() {
-      const nextMonthInput = document.getElementById('nextMonthLabel');
-      const passwordInput = document.getElementById('closeMonthPassword');
+window.togglePasswordVisibility = function(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input || !icon) return;
 
-      const nextPeriod = nextMonthInput?.value.trim();
-      const pass = passwordInput?.value;
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+};
 
-      if (!pass || pass !== 'admin123') {
-        window.showToast('Password konfirmasi salah! Tutup buku dibatalkan.', 'error');
-        if (passwordInput) passwordInput.value = '';
-        return;
-      }
+window.confirmCloseMonth = async function() {
+  const nextMonthInput = document.getElementById('nextMonthLabel');
+  const passwordInput = document.getElementById('closeMonthPassword');
 
-      if (!nextPeriod) {
-        window.showToast('Masukkan nama periode bulan baru!', 'warning');
-        return;
-      }
+  const nextPeriod = nextMonthInput?.value.trim();
+  const pass = passwordInput?.value;
 
-      const turnover = products.reduce((sum, p) => sum + (Number(p.outgoing || 0) * Number(p.price || 0)), 0);
-      const cogsSales = products.reduce((sum, p) => sum + (Number(p.outgoing || 0) * Number(p.hpp || 0)), 0);
-      const grossProfit = turnover - cogsSales;
+  if (!pass || pass !== 'admin123') {
+    window.showToast('Password konfirmasi salah! Tutup buku dibatalkan.', 'error');
+    if (passwordInput) passwordInput.value = '';
+    return;
+  }
 
-      const lossSupplier = products.reduce((sum, p) => sum + (Number(p.supplierDamaged || 0) * Number(p.hpp || 0)), 0);
-      const lossShipping = products.reduce((sum, p) => sum + (Number(p.shippingDamaged || 0) * Number(p.price || 0)), 0);
-      const totalLoss = lossSupplier + lossShipping;
+  if (!nextPeriod) {
+    window.showToast('Masukkan nama periode bulan baru!', 'warning');
+    return;
+  }
 
-      const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-      const netProfit = grossProfit - totalLoss - totalExpenses;
+  const turnover = products.reduce((sum, p) => sum + (Number(p.outgoing || 0) * Number(p.price || 0)), 0);
+  const cogsSales = products.reduce((sum, p) => sum + (Number(p.outgoing || 0) * Number(p.hpp || 0)), 0);
+  const grossProfit = turnover - cogsSales;
 
-      const newArchive = {
-        docId: `arc-${Date.now()}`,
-        period: activePeriodName,
-        turnover: turnover,
-        grossProfit: grossProfit,
-        totalLoss: totalLoss,
-        expenses: totalExpenses,
-        netProfit: netProfit
-      };
-      monthlyArchives.push(newArchive);
+  const lossSupplier = products.reduce((sum, p) => sum + (Number(p.supplierDamaged || 0) * Number(p.hpp || 0)), 0);
+  const lossShipping = products.reduce((sum, p) => sum + (Number(p.shippingDamaged || 0) * Number(p.price || 0)), 0);
+  const totalLoss = lossSupplier + lossShipping;
 
-      products.forEach(p => {
-        p.outgoing = 0;
-        p.supplierDamaged = 0;
-        p.shippingDamaged = 0;
-      });
+  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  const netProfit = grossProfit - totalLoss - totalExpenses;
 
-      expenses = [];
-      activePeriodName = nextPeriod;
+  const newArchive = {
+    docId: `arc-${Date.now()}`,
+    period: activePeriodName,
+    turnover: turnover,
+    grossProfit: grossProfit,
+    totalLoss: totalLoss,
+    expenses: totalExpenses,
+    netProfit: netProfit
+  };
+  monthlyArchives.push(newArchive);
 
-      if (!isOfflineFallbackMode && db) {
-        try {
-          await addDoc(collection(db, 'artifacts', appId, 'public_archives_v7'), newArchive);
-          for (const p of products) {
-            await updateDoc(doc(db, 'artifacts', appId, 'public_products_v7', p.docId), { outgoing: 0, supplierDamaged: 0, shippingDamaged: 0 }).catch(() => {});
-          }
-          await setDoc(doc(db, 'artifacts', appId, 'public_config_v7', 'settings'), { categories: categories, activePeriodName: activePeriodName }, { merge: true }).catch(() => {});
-        } catch(err) {
-          activateLocalStorageFallbackMode();
-        }
-      }
-      saveLocalStorageFallback();
+  // Reset counter transaksi produk untuk bulan baru
+  products.forEach(p => {
+    p.outgoing = 0;
+    p.supplierDamaged = 0;
+    p.shippingDamaged = 0;
+  });
 
-      window.closeModal('closeMonthModal');
-      window.showToast(`Periode ${activePeriodName} dimulai & laporan diarsipkan!`, 'success');
-    };
+  expenses = [];
+  activePeriodName = nextPeriod;
+
+  // Simpan seluruh perubahan arsip dan reset produk ke 1 dokumen cloud
+  await saveStateToCloud();
+  saveLocalStorageFallback();
+
+  window.closeModal('closeMonthModal');
+  window.showToast(`Periode ${activePeriodName} dimulai & laporan diarsipkan!`, 'success');
+};
   </script>
 
   <!DOCTYPE html>
