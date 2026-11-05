@@ -2047,23 +2047,25 @@
     };
 
       window.confirmDeleteProduct = async function() {
-        const docId = document.getElementById('deleteDocId')?.value;
-        if (!docId) return;
-
-        // Hapus dari state lokal sementara
-        products = products.filter(p => p.docId !== docId);
+      const docId = document.getElementById('deleteDocId')?.value;
+      if (!docId) return;
 
       if (!isOfflineFallbackMode && db) {
-         try {
-        // Perintah hapus ke server Cloud Firestore
-        await deleteDoc(doc(db, 'artifacts', appId, 'public_products_v7', docId));
-        window.showToast(`Produk berhasil dihapus permanen dari Cloud`, 'success');
-      } catch(err) {
-        // Tampilkan error aslinya ke console & toast agar terlihat
-        console.error("Gagal menghapus dokumen di Firestore:", err);
-        window.showToast(`Gagal hapus di server: ${err.message}`, 'error');
+        try {
+          // 1. Kirim perintah hapus ke server Cloud Firestore terlebih dahulu
+          await deleteDoc(doc(db, 'artifacts', appId, 'public_products_v7', docId));
+          window.showToast(`Produk berhasil dihapus permanen dari Cloud`, 'success');
+        } catch(err) {
+          // 2. Jika gagal di server, tampilkan error dan JANGAN hapus data lokal
+          console.error("Gagal menghapus dokumen di Firestore:", err);
+          window.showToast(`Gagal hapus di server: ${err.message}`, 'error');
+          window.closeModal('deleteModal');
+          return; // Hentikan eksekusi agar data tidak hilang di UI saja
+        }
       }
-    }
+
+      // 3. Hapus dari state lokal HANYA jika server sukses (atau mode offline aktif)
+      products = products.filter(p => p.docId !== docId);
 
       saveLocalStorageFallback();
       window.closeModal('deleteModal');
