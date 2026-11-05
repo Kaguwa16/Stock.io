@@ -1909,7 +1909,7 @@
         const qtyGood = parseInt(document.getElementById('transQtyGood')?.value, 10) || 0;
         const qtySupplierDamaged = parseInt(document.getElementById('transQtySupplierDamaged')?.value, 10) || 0;
 
-          if (qtyGood === 0 && qtySupplierDamaged === 0) {
+        if (qtyGood === 0 && qtySupplierDamaged === 0) {
           window.showToast('Masukkan kuantitas stok bagus atau barang pecah supplier!', 'warning');
           return;
         }
