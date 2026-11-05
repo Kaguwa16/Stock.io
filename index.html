@@ -55,8 +55,8 @@
             <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
           </div>
           <div>
-            <h1 class="font-bold text-white tracking-wide text-base leading-tight">Cloud Stock & QC</h1>
-            <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Realtime Online</span>
+            <h1 class="font-bold text-white tracking-wide text-base leading-tight">Stock & Finance</h1>
+            <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Realtime</span>
           </div>
         </div>
         <button id="closeSidebarMobile" class="lg:hidden text-slate-400 hover:text-white">
@@ -101,6 +101,11 @@
         </button>
       </nav>
 
+        <button id="logoutBtn" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition cursor-pointer shadow-lg">
+          <i class="fa-solid fa-right-from-bracket text-base w-5"></i>
+          <span>Keluar (Logout)</span>
+        </button>
+      
       <div class="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-9 h-9 rounded-full bg-emerald-700/40 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/30">
@@ -382,7 +387,7 @@
               <div>
                 <div class="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold mb-2 border border-emerald-500/30">
                   <i class="fa-solid fa-wallet"></i>
-                  <span>Periode Berjalan: <span id="activePeriodLabel" class="text-white font-bold underline">Oktober 2026</span></span>
+                  <span>Periode Berjalan: <span id="activePeriodLabel" class="text-white font-bold underline">November 2026</span></span>
                 </div>
                 <h2 class="text-2xl font-bold tracking-tight">Laporan Keuangan, Operasional & Retur Pecah</h2>
                 <p class="text-slate-300 text-sm mt-1 max-w-2xl">
@@ -470,7 +475,7 @@
               <div>
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                   <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">
-                    Log Biaya Operasional Bulan Ini (Cloud)
+                    Log Biaya Operasional Bulan Ini
                   </h3>
                   <button onclick="openModal('expenseModal')" class="text-xs font-semibold text-emerald-600 hover:underline">
                     + Tambah Biaya
@@ -522,7 +527,7 @@
             
             <div class="p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
-                <h3 class="font-bold text-slate-800 text-lg">Tabel Master Katalog & Valuasi Keuangan Produk (Online)</h3>
+                <h3 class="font-bold text-slate-800 text-lg">Tabel Master Katalog & Valuasi Keuangan Produk</h3>
                 <p class="text-xs text-slate-400">Kelola harga modal (HPP), harga jual, nilai aset stok, kerugian pecah, dan omset per produk secara real-time.</p>
               </div>
 
@@ -957,7 +962,7 @@
     let categories = ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"];
     let expenses = [];
     let monthlyArchives = [];
-    let activePeriodName = "Oktober 2026";
+    let activePeriodName = "November 2026";
 
     // Default Catalog Seeds
     const rawProductNames = [
@@ -1021,32 +1026,35 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+      // 1. Inisialisasi Firebase
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
 
-        if (initialAuthToken) {
-          await signInWithCustomToken(auth, initialAuthToken);
+      // 2. Pantau status sesi login yang sudah dibuat lewat login.html
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+        // Jika user sudah login, jalankan aplikasi cloud
+        currentUser = user;
+        const uidDisplay = document.getElementById('authUserIdDisplay');
+        if (uidDisplay) {
+          uidDisplay.innerText = `Online: ${user.email || user.uid.substring(0, 8)}`;
+        }
+        initCloudSync();
         } else {
-          await signInAnonymously(auth);
+        // Jika belum login atau sesi habis, lempar kembali ke halaman login.html
+        window.location.href = "login.html";
+        }
+      });
+
+        } catch (err) {
+        console.error("Gagal menginisialisasi Firebase:", err);
         }
 
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            currentUser = user;
-            const uidDisplay = document.getElementById('authUserIdDisplay');
-            if (uidDisplay) uidDisplay.innerText = `Online User: ${user.uid.substring(0, 8)}`;
-            initCloudSync();
-          }
-        });
-      } catch (err) {
-        console.warn("Firebase Auth/Init Fallback triggered:", err);
-        activateLocalStorageFallbackMode();
-      }
-
-      initRealtimeClock();
-      setupEventListeners();
-    });
+        // 3. Jalankan fungsi pendukung tampilan
+        initRealtimeClock();
+        setupEventListeners();
+      });
 
     function activateLocalStorageFallbackMode() {
       isOfflineFallbackMode = true;
@@ -2201,5 +2209,64 @@
       window.showToast(`Periode ${activePeriodName} dimulai & laporan diarsipkan!`, 'success');
     };
   </script>
+
+  <!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Toko / Admin</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- KONTEN DASHBOARD ANDA -->
+  
+  <!-- Skrip Firebase & Proteksi Sesi Auth (Modular SDK v11) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    // Konfigurasi Firebase Project Anda
+    const firebaseConfig = {
+      apiKey: "AIzaSyCpkSNCxVKr7pQz6mKZKqlJGz4-k6pMCMQ",
+      authDomain: "monitor-stock-1dab6.firebaseapp.com",
+      projectId: "monitor-stock-1dab6",
+      storageBucket: "monitor-stock-1dab6.firebasestorage.app",
+      messagingSenderId: "28635188865",
+      appId: "1:28635188865:web:3921fbe9c21f4c4d0bc780",
+      measurementId: "G-KE8B9FG4H8"
+    };
+
+    // 1. Inisialisasi Firebase App
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 2. Cek apakah user sudah login atau belum
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Sesi aktif, user diizinkan melihat halaman ini
+        console.log("Login sebagai:", user.email);
+      } else {
+        // Jika belum login, otomatis dialihkan ke halaman login.html
+        window.location.href = "login.html";
+      }
+    });
+
+    // 3. Fungsi tombol Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await signOut(auth);
+          window.location.href = "login.html";
+        } catch (error) {
+          console.error("Gagal logout:", error);
+        }
+      });
+    }
+  </script>
+
 </body>
 </html>
