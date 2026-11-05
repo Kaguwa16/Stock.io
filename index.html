@@ -1116,8 +1116,7 @@
       refreshDashboardData();
     }
 
-    // ==================== INISIASI & SINKRONISASI CLOUD (SINGLE DOCUMENT) ====================
-    
+// ==================== INISIASI & SINKRONISASI CLOUD (SINGLE DOCUMENT) ====================
     function initCloudSync() {
       if (!currentUser || !db) return;
 
@@ -1138,18 +1137,19 @@
           seedDefaultState(storeRef);
         }
         
-        // Perbarui tampilan antarmuka (tabel, grafik, KPI)
+        // Perbarui tampilan antarmuka (tabel, grafik, KPI, dan kategori)
         refreshDashboardData();
+        renderCategoryDropdowns();
+        renderCategoryManagementList();
       }, (error) => {
         console.warn("Firestore error atau dibatasi, beralih ke mode offline:", error);
         activateLocalStorageFallbackMode();
       });
     }
 
-    async function seedDefaultState(storeRef) {
+      async function seedDefaultState(storeRef) {
       if (!currentUser || !db || isOfflineFallbackMode) return;
       try {
-        // Menyiapkan 83 produk awal dari array rawProductNames
         const initialProducts = rawProductNames.map((name, index) => ({
           docId: `prod_${index + 1}`,
           id: `TG-${String(index + 1).padStart(3, '0')}`,
@@ -1166,7 +1166,6 @@
           shippingDamaged: 0
         }));
 
-        // Menyusun objek state tunggal lengkap
         const initialState = {
           products: initialProducts,
           categories: ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"],
@@ -1176,7 +1175,6 @@
           updatedAt: new Date().toISOString()
         };
 
-        // Simpan dokumen awal secara utuh ke Firestore
         await setDoc(storeRef, initialState);
         console.log("Seeding default state berhasil dibuat di cloud.");
       } catch (err) {
@@ -1185,44 +1183,10 @@
       }
     }
 
-    async function seedDefaultState(storeRef) {
-      if (!currentUser || !db || isOfflineFallbackMode) return;
-        try {
-        const initialProducts = rawProductNames.map((name, index) => ({
-          docId: `prod_${index + 1}`,
-          id: `TG-${String(index + 1).padStart(3, '0')}`,
-          name: name,
-          category: 'Tempered Glass',
-          brand: getBrandName(name),
-          hpp: 0,
-          price: 0,
-          stock: 0,
-          minStock: 10,
-          unit: 'Pcs',
-          outgoing: 0,
-          supplierDamaged: 0,
-          shippingDamaged: 0
-        }));
-
-        const initialState = {
-          products: initialProducts,
-          categories: ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"],
-          expenses: [],
-          monthlyArchives: [],
-          activePeriodName: "November 2026",
-          updatedAt: new Date().toISOString()
-        };
-
-           await setDoc(storeRef, initialState);
-         } catch (err) {
-           console.warn("Gagal seeding default state:", err);
-           activateLocalStorageFallbackMode();
-        }
-    }
-
-     async function saveStateToCloud() {
+    // Fungsi simpan terpusat untuk kategori, produk, dll.
+    async function saveStateToCloud() {
       if (isOfflineFallbackMode || !db || !currentUser) return;
-        try {
+      try {
         const storeRef = doc(db, 'artifacts', appId, 'dashboard_store', 'main_state');
         await setDoc(storeRef, {
           products: products,
@@ -1231,13 +1195,13 @@
           monthlyArchives: monthlyArchives,
           activePeriodName: activePeriodName,
           updatedAt: new Date().toISOString()
-        });
+        }, { merge: true });
       } catch (err) {
-      console.error("Gagal menyimpan ke cloud:", err);
-      activateLocalStorageFallbackMode();
+        console.error("Gagal menyimpan ke cloud:", err);
+        activateLocalStorageFallbackMode();
       }
     }
-    
+
     window.forceCloudRefresh = function() {
       refreshDashboardData();
       window.showToast("Data berhasil disinkronkan!", "success");
