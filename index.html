@@ -2201,5 +2201,57 @@
       window.showToast(`Periode ${activePeriodName} dimulai & laporan diarsipkan!`, 'success');
     };
   </script>
+
+  <!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Toko / Admin</title>
+  <!-- CSS atau CDN lain milik Anda -->
+</head>
+<body>
+
+  <!-- KONTEN DASHBOARD ANDA YANG SEKARANG -->
+  <div class="container">
+    <h1>Selamat Datang di Dashboard</h1>
+    <!-- Tabel, Form, dll -->
+    
+    <!-- Tombol Logout (Opsional, letakkan di navbar atau sidebar) -->
+    <button id="logoutBtn" class="btn-danger">Keluar (Logout)</button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TEMPELKAN SCRIPT FIREBASE AUTH DI SINI     -->
+  <!-- ========================================== -->
+  <script type="module">
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-auth.js";
+    
+    const auth = getAuth();
+
+    // 1. Cek apakah user sudah login atau belum
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Sesi aktif, user diizinkan melihat halaman ini
+        console.log("Login sebagai:", user.email);
+      } else {
+        // Jika belum login, otomatis dialihkan ke halaman login.html
+        window.location.href = "login.html";
+      }
+    });
+
+    // 2. Fungsi tombol Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await signOut(auth);
+          window.location.href = "login.html";
+        } catch (error) {
+          console.error("Gagal logout:", error);
+        }
+      });
+    }
+  </script>
+
 </body>
 </html>
