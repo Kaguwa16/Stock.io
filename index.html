@@ -2220,11 +2220,18 @@
     <button id="logoutBtn" class="btn-danger">Keluar (Logout)</button>
   </div>
 
-  <!-- ========================================== -->
-  <!-- TEMPELKAN SCRIPT FIREBASE AUTH DI SINI     -->
-  <!-- ========================================== -->
+ const firebaseConfig = {
+  apiKey: "AIzaSyCpkSNCxVKr7pQz6mKZKqlJGz4-k6pMCMQ",
+  authDomain: "monitor-stock-1dab6.firebaseapp.com",
+  projectId: "monitor-stock-1dab6",
+  storageBucket: "monitor-stock-1dab6.firebasestorage.app",
+  messagingSenderId: "28635188865",
+  appId: "1:28635188865:web:3921fbe9c21f4c4d0bc780",
+  measurementId: "G-KE8B9FG4H8"
+};
+
   <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js";
     
     const auth = getAuth();
 
