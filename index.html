@@ -1021,32 +1021,35 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+      // 1. Inisialisasi Firebase
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
 
-        if (initialAuthToken) {
-          await signInWithCustomToken(auth, initialAuthToken);
+      // 2. Pantau status sesi login yang sudah dibuat lewat login.html
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+        // Jika user sudah login, jalankan aplikasi cloud
+        currentUser = user;
+        const uidDisplay = document.getElementById('authUserIdDisplay');
+        if (uidDisplay) {
+          uidDisplay.innerText = `Online: ${user.email || user.uid.substring(0, 8)}`;
+        }
+        initCloudSync();
         } else {
-          await signInAnonymously(auth);
+        // Jika belum login atau sesi habis, lempar kembali ke halaman login.html
+        window.location.href = "login.html";
+        }
+      });
+
+        } catch (err) {
+        console.error("Gagal menginisialisasi Firebase:", err);
         }
 
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            currentUser = user;
-            const uidDisplay = document.getElementById('authUserIdDisplay');
-            if (uidDisplay) uidDisplay.innerText = `Online User: ${user.uid.substring(0, 8)}`;
-            initCloudSync();
-          }
-        });
-      } catch (err) {
-        console.warn("Firebase Auth/Init Fallback triggered:", err);
-        activateLocalStorageFallbackMode();
-      }
-
-      initRealtimeClock();
-      setupEventListeners();
-    });
+        // 3. Jalankan fungsi pendukung tampilan
+        initRealtimeClock();
+        setupEventListeners();
+      });
 
     function activateLocalStorageFallbackMode() {
       isOfflineFallbackMode = true;
