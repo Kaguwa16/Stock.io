@@ -2,7 +2,7 @@
   "name": "Monitor Inventaris",
   "short_name": "Monis",
   "description": "Monitoring Stock & Finance",
-  "start_url": "https://kaguwa16.github.io/Stock.io",
+  "start_url": "/Stock.io/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1e293b",
