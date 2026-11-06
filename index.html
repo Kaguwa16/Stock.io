@@ -932,28 +932,30 @@
   </div>
 
   <!-- Setting manifest.json -->
-  <html lang="id">
-  <head>
+ <html lang="id">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aplikasi Web</title>
+  <title>Stock Monitoring Dashboard</title>
   
-  <!-- Hubungkan manifest.json -->
-  <link rel="manifest" href="/manifest.json">
+  <!-- Hubungkan manifest.json dengan path repo Stock.io -->
+  <link rel="manifest" href="/Stock.io/manifest.json">
   <meta name="theme-color" content="#1e293b">
   
-  <link rel="stylesheet" href="/style.css">
+  <!-- Hubungkan CSS dengan path repo Stock.io -->
+  <link rel="stylesheet" href="/Stock.io/style.css">
 </head>
 <body>
   <div id="app">...</div>
 
-  <script src="/app.js"></script>
+  <!-- Hubungkan JS utama dengan path repo Stock.io -->
+  <script src="/Stock.io/app.js"></script>
 
-  <!-- Daftarkan Service Worker -->
+  <!-- Daftarkan Service Worker dengan path repo Stock.io -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/Stock.io/sw.js')
           .then((reg) => console.log('ServiceWorker terdaftar:', reg.scope))
           .catch((err) => console.log('ServiceWorker gagal:', err));
       });
