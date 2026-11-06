@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-io-cache-v1';
+const CACHE_NAME = 'stock-io-cache-v2';
 const repoPath = '/Stock.io';
 
 const assetsToCache = [
