@@ -1,12 +1,11 @@
-// Import Firebase SDK v10 dari CDN resmi
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
   initializeFirestore, 
   persistentLocalCache, 
   persistentMultipleTabManager, 
   collection, 
   getDocs 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Konfigurasi Firebase (terhubung ke project monitor-stock-1dab6)
 const firebaseConfig = {
