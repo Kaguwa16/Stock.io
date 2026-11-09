@@ -33,30 +33,3 @@ if (logoutBtn) {
 }
 
 // 5. Sidebar
- // Panggil fungsi ini di bagian atas atau bawah main.js Anda
-setupGlobalEventListeners();
-
-function setupGlobalEventListeners() {
-  const openSidebarBtn = document.getElementById('openSidebarMobile');
-  if (openSidebarBtn) {
-    openSidebarBtn.addEventListener('click', () => {
-      document.getElementById('sidebar')?.classList.remove('-translate-x-full');
-      document.getElementById('sidebarOverlay')?.classList.remove('hidden');
-    });
-  }
-
-  const closeSidebar = () => {
-    document.getElementById('sidebar')?.classList.add('-translate-x-full');
-    document.getElementById('sidebarOverlay')?.classList.add('hidden');
-  };
-
-  const closeSidebarBtn = document.getElementById('closeSidebarMobile');
-  const overlayBtn = document.getElementById('sidebarOverlay');
-  
-  if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener('click', closeSidebar);
-  }
-  if (overlayBtn) {
-    overlayBtn.addEventListener('click', closeSidebar);
-  }
-}
