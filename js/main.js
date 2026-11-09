@@ -35,18 +35,22 @@ if (logoutBtn) {
 // 5. KHUSUS SIDEBAR 
 function setupGlobalEventListeners() {
   const openSidebarBtn = document.getElementById('openSidebarMobile');
-  if (openSidebarBtn) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const closeSidebarBtn = document.getElementById('closeSidebarMobile');
+
+  if (openSidebarBtn && sidebar) {
     openSidebarBtn.addEventListener('click', () => {
-      document.getElementById('sidebar')?.classList.remove('-translate-x-full');
-      document.getElementById('sidebarOverlay')?.classList.remove('hidden');
+      sidebar.classList.remove('-translate-x-full');
+      overlay?.classList.remove('hidden');
     });
   }
 
   const closeSidebar = () => {
-    document.getElementById('sidebar')?.classList.add('-translate-x-full');
-    document.getElementById('sidebarOverlay')?.classList.add('hidden');
+    sidebar?.classList.add('-translate-x-full');
+    overlay?.classList.add('hidden');
   };
 
-  document.getElementById('closeSidebarMobile')?.addEventListener('click', closeSidebar);
-  document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
+  if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
 }
