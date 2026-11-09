@@ -48,41 +48,15 @@
           <span>Ringkasan Dasbor</span>
         </a>
 
-        <div class="relative">
-          <div class="flex items-center justify-between w-full rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-            <a href="keuangan.html" class="flex-1 flex items-center space-x-3 px-4 py-3">
-            <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
-            <span class="font-bold">Laporan & Keuangan</span>
-            </a>
-          <button type="button" onclick="toggleSubmenu('keuanganSubmenu', event)" class="px-3 py-3 text-slate-400 hover:text-white focus:outline-none">
-          <i class="fa-solid fa-ellipsis-vertical"></i>
+        <button onclick="switchView('finance')" id="nav-finance" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
+          <span class="font-bold">Laporan & Keuangan</span>
         </button>
-        </div>
-          
-      <!-- Submenu Dropdown Keuangan -->
-        <div id="keuanganSubmenu" class="hidden pl-11 pr-4 py-2 space-y-1 bg-slate-950/40 rounded-xl my-1 text-xs">
-          <a href="keuangan.html#ringkasan" class="block py-1.5 text-slate-400 hover:text-white transition">Ringkasan Arus Kas</a>
-          <a href="keuangan.html#arsip" class="block py-1.5 text-slate-400 hover:text-white transition">Arsip Bulanan</a>
-          </div>
-        </div>
 
-        <!-- Menu Katalog dengan Submenu Titik 3 -->
-        <div class="relative">
-          <div class="flex items-center justify-between w-full rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-            <a href="katalog.html" class="flex-1 flex items-center space-x-3 px-4 py-3">
-              <i class="fa-solid fa-boxes-packing text-base w-5"></i>
-              <span>Master Katalog Produk</span>
-              </a>
-            <button type="button" onclick="toggleSubmenu('katalogSubmenu', event)" class="px-3 py-3 text-slate-400 hover:text-white focus:outline-none">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
-          </button>
-        </div>
-        <!-- Submenu Dropdown Katalog -->
-        <div id="katalogSubmenu" class="hidden pl-11 pr-4 py-2 space-y-1 bg-slate-950/40 rounded-xl my-1 text-xs">
-          <a href="katalog.html#tambah" onclick="openModal('productModal')" class="block py-1.5 text-slate-400 hover:text-white transition">Tambah Produk Baru</a>
-            <a href="katalog.html#kategori" class="block py-1.5 text-slate-400 hover:text-white transition">Kelola Kategori</a>
-          </div>
-        </div>
+        <button onclick="switchView('catalog')" id="nav-catalog" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-boxes-packing text-base w-5"></i>
+          <span>Master Katalog Produk</span>
+        </button>
 
         <div class="pt-4 pb-2 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Aksi Cepat</div>
 
