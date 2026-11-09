@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { initRealtimeClock } from './utils.js';
 import { state, subscribeState, initCloudSync } from './state.js';
 import { renderDashboardPage } from './pages/dashboard.js';
+import { renderDashboardPage } from './pages/keuangan.js';
 import { renderKatalogPage } from './pages/katalog.js';
 
 // 1. Inisialisasi Fitur Umum
