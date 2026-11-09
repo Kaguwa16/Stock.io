@@ -4,7 +4,6 @@ let currentPage = 1;
 const itemsPerPage = 10;
 
 export function renderKatalogPage(currentState) {
-  // Gunakan state global yang dikirimkan atau impor langsung
   const activeState = currentState || state;
   const tbody = document.getElementById('masterTableBody');
   if (!tbody) return; // Keluar jika bukan halaman katalog
@@ -103,7 +102,7 @@ function renderMasterTable(activeState) {
 function renderPagination(totalPages, activeState) {
   const controls = document.getElementById('paginationControls');
   if (!controls) return;
-  let html = `<button type="button" onclick="changePage(${currentPage - 1}, ${activeState})" ${currentPage === 1 ? 'disabled class="opacity-40 cursor-not-allowed px-2.5 py-1 border rounded-lg"' : 'class="px-2.5 py-1 border rounded-lg hover:bg-slate-100"'}>&lt;</button>`;
+  let html = `<button type="button" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="opacity-40 cursor-not-allowed px-2.5 py-1 border rounded-lg"' : 'class="px-2.5 py-1 border rounded-lg hover:bg-slate-100"'}>&lt;</button>`;
 
   for (let i = 1; i <= totalPages; i++) {
     if (i === currentPage) {
@@ -231,7 +230,6 @@ window.openDeleteModal = function(docId) {
 
 window.handleProductSubmit = async function(e) {
   e.preventDefault();
-  console.log("handleProductSubmit dipanggil");
 
   const editDocId = document.getElementById('editDocId')?.value;
   const sku = document.getElementById('prodSku')?.value.trim();
@@ -258,9 +256,8 @@ window.handleProductSubmit = async function(e) {
     });
   }
 
-  // Simpan ke Cloud dan LocalStorage
+  // Simpan ke Cloud menggunakan fungsi yang tersedia
   if (typeof saveStateToCloud === 'function') await saveStateToCloud();
-  if (typeof saveLocalStorageFallback === 'function') saveLocalStorageFallback();
 
   renderKatalogPage(state);
   window.closeModal('productModal');
@@ -274,7 +271,6 @@ window.confirmDeleteProduct = async function() {
   state.products = state.products.filter(p => p.docId !== docId);
 
   if (typeof saveStateToCloud === 'function') await saveStateToCloud();
-  if (typeof saveLocalStorageFallback === 'function') saveLocalStorageFallback();
 
   renderKatalogPage(state);
   window.closeModal('deleteModal');
@@ -297,7 +293,6 @@ window.handleTransactionSubmit = async function(e) {
   }
 
   if (typeof saveStateToCloud === 'function') await saveStateToCloud();
-  if (typeof saveLocalStorageFallback === 'function') saveLocalStorageFallback();
 
   renderKatalogPage(state);
   window.closeModal('transactionModal');
