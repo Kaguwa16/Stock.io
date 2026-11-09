@@ -1,1 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Keuangan & Tutup Buku - Stock.io</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+    }
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 z-30 fixed inset-y-0 left-0 lg:static -translate-x-full lg:translate-x-0">
+      <div class="h-16 flex items-center justify-between px-6 bg-slate-950 border-b border-slate-800">
+        <h1 class="font-bold text-white tracking-wide text-base">Stock & Finance</h1>
+      </div>
+
+      <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-chart-pie text-base w-5"></i>
+          <span>Ringkasan Dasbor</span>
+        </a>
+
+        <!-- Active State di Keuangan -->
+        <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
+          <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
+          <span class="font-bold">Laporan & Keuangan</span>
+        </a>
+
+        <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-boxes-packing text-base w-5"></i>
+          <span>Master Katalog Produk</span>
+        </a>
+      </nav>
+
+      <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
+        <i class="fa-solid fa-right-from-bracket text-base"></i>
+        <span>Keluar (Logout)</span>
+      </button>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-y-auto">
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
+        <p class="text-sm font-bold text-slate-700">Laporan Keuangan & Tutup Buku Bulanan</p>
+      </header>
+
+      <main class="p-4 sm:p-8 space-y-8 max-w-7xl w-full mx-auto">
+        <!-- Banner Keuangan -->
+        <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span id="activePeriodLabel" class="text-white font-bold underline">November 2026</span>
+            <h2 class="text-2xl font-bold tracking-tight mt-1">Laporan Keuangan, Operasional & Retur Pecah</h2>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="openModal('expenseModal')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">
+              <i class="fa-solid fa-plus mr-1"></i> Biaya Operasional
+            </button>
+            <button onclick="openModal('closeMonthModal')" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">
+              <i class="fa-solid fa-calendar-check mr-1"></i> Tutup Buku
+            </button>
+          </div>
+        </div>
+
+        <!-- Financial Cards Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Nilai Aset Stok Layak</span>
+            <h3 id="finValAsset" class="text-xl font-extrabold text-slate-800">Rp 0</h3>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-bold uppercase text-emerald-600 block mb-1">Omset Penjualan</span>
+            <h3 id="finValTurnover" class="text-xl font-extrabold text-emerald-600">Rp 0</h3>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-bold uppercase text-blue-600 block mb-1">Laba Kotor</span>
+            <h3 id="finValGrossProfit" class="text-xl font-extrabold text-blue-600">Rp 0</h3>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-bold uppercase text-purple-600 block mb-1">Laba Bersih (Nett)</span>
+            <h3 id="finValNetProfit" class="text-xl font-extrabold text-purple-700">Rp 0</h3>
+          </div>
+        </section>
+
+        <!-- Breakdown & Expense Log -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-3">Rincian Kerugian Pecah</h3>
+            <div class="flex justify-between p-3 rounded-xl bg-rose-50 border border-rose-100">
+              <span class="text-xs font-bold text-rose-800">Pecah Supplier (HPP)</span>
+              <span id="finLossSupplierNominal" class="text-sm font-extrabold text-rose-600">Rp 0</span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-purple-50 border border-purple-100">
+              <span class="text-xs font-bold text-purple-800">Retur Transit Pembeli</span>
+              <span id="finLossShippingNominal" class="text-sm font-extrabold text-purple-600">Rp 0</span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="text-xs font-bold text-slate-800">Total Biaya Operasional</span>
+              <span id="finTotalExpensesNominal" class="text-sm font-extrabold text-slate-800">Rp 0</span>
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-3 mb-4">Log Biaya Operasional Bulan Ini</h3>
+            <div id="expenseListContainer" class="space-y-2 max-h-56 overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- Table Arsip Bulanan -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-6 border-b"><h3 class="font-bold text-slate-800 text-base">Arsip Rekap Keuangan Bulanan</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] border-b">
+                  <th class="py-3.5 px-4">Periode</th>
+                  <th class="py-3.5 px-4 text-right">Omset</th>
+                  <th class="py-3.5 px-4 text-right">Laba Kotor</th>
+                  <th class="py-3.5 px-4 text-right">Rugi Pecah</th>
+                  <th class="py-3.5 px-4 text-right">Biaya</th>
+                  <th class="py-3.5 px-4 text-right">Laba Bersih</th>
+                </tr>
+              </thead>
+              <tbody id="archiveTableBody" class="divide-y text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
