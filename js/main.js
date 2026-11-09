@@ -50,3 +50,20 @@ function setupGlobalEventListeners() {
   document.getElementById('closeSidebarMobile')?.addEventListener('click', closeSidebar);
   document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
 }
+
+// Fungsi global untuk membuka/menutup submenu sidebar via ikon titik tiga
+window.toggleSubmenu = function(submenuId, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  const submenu = document.getElementById(submenuId);
+  if (submenu) {
+    // Tutup submenu lain jika ingin efek accordion (opsional)
+    document.querySelectorAll('[id$="Submenu"]').forEach(el => {
+      if (el.id !== submenuId) el.classList.add('hidden');
+    });
+
+    // Toggle visibilitas submenu yang dipilih
+    submenu.classList.toggle('hidden');
+  }
+};
