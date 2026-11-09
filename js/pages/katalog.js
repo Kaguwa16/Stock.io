@@ -1,5 +1,4 @@
 import { formatIDR } from '../utils.js';
-import { state, saveStateToCloud, saveLocalStorageFallback } from '../state.js';
 
 let currentPage = 1;
 const itemsPerPage = 10;
