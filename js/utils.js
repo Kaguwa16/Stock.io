@@ -30,3 +30,14 @@ export function initRealtimeClock() {
   update();
   setInterval(update, 1000);
 }
+
+// Window Katalog Page
+window.setElText = function(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = text;
+};
+
+window.showToast = function(message, type = 'success') {
+  // Logika toast sederhana Anda
+  console.log(`[${type.toUpperCase()}] ${message}`);
+};
