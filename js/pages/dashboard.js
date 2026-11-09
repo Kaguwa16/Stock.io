@@ -299,7 +299,7 @@ export function renderTopOutgoingLeaderboard(state) {
   }).join('');
 }
 
-export window.forceCloudRefresh = function() {
+window.forceCloudRefresh = function() {
       refreshDashboardData();
       window.showToast("Data berhasil disinkronkan!", "success");
     };
