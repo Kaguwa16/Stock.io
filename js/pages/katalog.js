@@ -1,23 +1,30 @@
 import { formatIDR } from '../utils.js';
+import { saveStateToCloud } from '../state.js';
 
 let currentPage = 1;
 const itemsPerPage = 10;
 
-export function renderKatalogPage(currentState) {
-  const activeState = currentState || state;
+// Variabel penampung state di level modul agar bisa diakses semua fungsi window.*
+let appState = { products: [], categories: [] };
+
+export function renderKatalogPage(stateData) {
+  if (stateData) {
+    appState = stateData; // Sinkronkan data state terbaru
+  }
+  
   const tbody = document.getElementById('masterTableBody');
   if (!tbody) return; // Keluar jika bukan halaman katalog
 
-  renderCategoryDropdowns(activeState);
-  renderMasterTable(activeState);
-  setupTableEventListeners(activeState);
-  populateTransactionProductSelect(activeState);
+  renderCategoryDropdowns();
+  renderMasterTable();
+  setupTableEventListeners();
+  populateTransactionProductSelect();
 }
 
 // ==================== FILTER & TABLE LOGIC ====================
 
-function getFilteredProducts(activeState) {
-  const products = activeState?.products || [];
+function getFilteredProducts() {
+  const products = appState?.products || [];
   const tableQuery = (document.getElementById('tableSearchInput')?.value || '').toLowerCase().trim();
   const categoryVal = document.getElementById('categoryFilter')?.value || 'ALL';
   const brandVal = (document.getElementById('brandFilter')?.value || 'ALL').toUpperCase();
@@ -45,12 +52,12 @@ function getBrandName(name) {
   return 'LAINNYA';
 }
 
-function renderMasterTable(activeState) {
+function renderMasterTable() {
   const tbody = document.getElementById('masterTableBody');
   const infoText = document.getElementById('tableInfoText');
   if (!tbody) return;
 
-  const filtered = getFilteredProducts(activeState);
+  const filtered = getFilteredProducts();
   const totalItems = filtered.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
@@ -62,7 +69,7 @@ function renderMasterTable(activeState) {
 
   if (pageItems.length === 0) {
     tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400"><p class="text-xs font-semibold">Tidak Ada Produk Ditemukan</p></td></tr>`;
-    renderPagination(totalPages, activeState);
+    renderPagination(totalPages);
     return;
   }
 
@@ -96,10 +103,10 @@ function renderMasterTable(activeState) {
     `;
   }).join('');
 
-  renderPagination(totalPages, activeState);
+  renderPagination(totalPages);
 }
 
-function renderPagination(totalPages, activeState) {
+function renderPagination(totalPages) {
   const controls = document.getElementById('paginationControls');
   if (!controls) return;
   let html = `<button type="button" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="opacity-40 cursor-not-allowed px-2.5 py-1 border rounded-lg"' : 'class="px-2.5 py-1 border rounded-lg hover:bg-slate-100"'}>&lt;</button>`;
@@ -118,7 +125,7 @@ function renderPagination(totalPages, activeState) {
 
 window.changePage = function(page) {
   currentPage = page;
-  renderKatalogPage(state);
+  renderMasterTable();
 };
 
 window.resetFilters = function() {
@@ -126,33 +133,33 @@ window.resetFilters = function() {
   if (document.getElementById('categoryFilter')) document.getElementById('categoryFilter').value = 'ALL';
   if (document.getElementById('brandFilter')) document.getElementById('brandFilter').value = 'ALL';
   currentPage = 1;
-  renderKatalogPage(state);
+  renderMasterTable();
   window.showToast?.('Filter pencarian di-reset', 'info');
 };
 
-function setupTableEventListeners(activeState) {
+function setupTableEventListeners() {
   const tableSearch = document.getElementById('tableSearchInput');
   const catFilter = document.getElementById('categoryFilter');
   const brandFilter = document.getElementById('brandFilter');
 
   if (tableSearch && !tableSearch.dataset.listenerAttached) {
-    tableSearch.addEventListener('input', () => { currentPage = 1; renderMasterTable(activeState); });
+    tableSearch.addEventListener('input', () => { currentPage = 1; renderMasterTable(); });
     tableSearch.dataset.listenerAttached = "true";
   }
   if (catFilter && !catFilter.dataset.listenerAttached) {
-    catFilter.addEventListener('change', () => { currentPage = 1; renderMasterTable(activeState); });
+    catFilter.addEventListener('change', () => { currentPage = 1; renderMasterTable(); });
     catFilter.dataset.listenerAttached = "true";
   }
   if (brandFilter && !brandFilter.dataset.listenerAttached) {
-    brandFilter.addEventListener('change', () => { currentPage = 1; renderMasterTable(activeState); });
+    brandFilter.addEventListener('change', () => { currentPage = 1; renderMasterTable(); });
     brandFilter.dataset.listenerAttached = "true";
   }
 }
 
 // ==================== MANAGING CATEGORIES & MODALS ====================
 
-function renderCategoryDropdowns(activeState) {
-  const categories = activeState?.categories || [];
+function renderCategoryDropdowns() {
+  const categories = appState?.categories || [];
   const filterSelect = document.getElementById('categoryFilter');
   if (filterSelect) {
     let filterHtml = '<option value="ALL">Semua Kategori</option>';
@@ -168,9 +175,9 @@ function renderCategoryDropdowns(activeState) {
   }
 }
 
-function populateTransactionProductSelect(activeState) {
+function populateTransactionProductSelect() {
   const select = document.getElementById('transProductSelect');
-  const products = activeState?.products || [];
+  const products = appState?.products || [];
   if (select) {
     select.innerHTML = products.map(p => 
       `<option value="${p.docId}">[${p.id}] ${p.name} - Stok: ${p.stock} Pcs (HPP: ${formatIDR(p.hpp)})</option>`
@@ -199,14 +206,14 @@ window.quickRestock = function(docId) {
 };
 
 window.editProduct = function(docId) {
-  const products = state.products || [];
+  const products = appState.products || [];
   const item = products.find(p => p.docId === docId);
   if (!item) return;
 
   if (document.getElementById('editDocId')) document.getElementById('editDocId').value = item.docId;
   if (document.getElementById('prodSku')) document.getElementById('prodSku').value = item.id;
   if (document.getElementById('prodName')) document.getElementById('prodName').value = item.name;
-  if (document.getElementById('prodCategory')) document.getElementById('prodCategory').value = item.category || (state.categories ? state.categories[0] : '');
+  if (document.getElementById('prodCategory')) document.getElementById('prodCategory').value = item.category || (appState.categories ? appState.categories[0] : '');
   if (document.getElementById('prodHpp')) document.getElementById('prodHpp').value = item.hpp || 0;
   if (document.getElementById('prodPrice')) document.getElementById('prodPrice').value = item.price || 0;
   if (document.getElementById('prodBrand')) document.getElementById('prodBrand').value = item.brand || getBrandName(item.name);
@@ -218,7 +225,7 @@ window.editProduct = function(docId) {
 };
 
 window.openDeleteModal = function(docId) {
-  const products = state.products || [];
+  const products = appState.products || [];
   const item = products.find(p => p.docId === docId);
   if (!item) return;
   if (document.getElementById('deleteDocId')) document.getElementById('deleteDocId').value = docId;
@@ -241,38 +248,37 @@ window.handleProductSubmit = async function(e) {
   const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
   let brand = document.getElementById('prodBrand')?.value.trim() || getBrandName(name);
 
-  if (!state.products) state.products = [];
+  if (!appState.products) appState.products = [];
 
   if (editDocId) {
-    const item = state.products.find(p => p.docId === editDocId);
+    const item = appState.products.find(p => p.docId === editDocId);
     if (item) {
       Object.assign(item, { id: sku, name, category, brand, hpp, price, stock, minStock });
     }
   } else {
-    state.products.unshift({
+    appState.products.unshift({
       docId: `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
       id: sku, name, category, brand, hpp, price, stock, minStock,
       unit: 'Pcs', outgoing: 0, supplierDamaged: 0, shippingDamaged: 0
     });
   }
 
-  // Simpan ke Cloud menggunakan fungsi yang tersedia
   if (typeof saveStateToCloud === 'function') await saveStateToCloud();
 
-  renderKatalogPage(state);
+  renderKatalogPage(appState);
   window.closeModal('productModal');
   window.showToast?.(`Produk ${name} berhasil disimpan`, 'success');
 };
 
 window.confirmDeleteProduct = async function() {
   const docId = document.getElementById('deleteDocId')?.value;
-  if (!docId || !state.products) return;
+  if (!docId || !appState.products) return;
 
-  state.products = state.products.filter(p => p.docId !== docId);
+  appState.products = appState.products.filter(p => p.docId !== docId);
 
   if (typeof saveStateToCloud === 'function') await saveStateToCloud();
 
-  renderKatalogPage(state);
+  renderKatalogPage(appState);
   window.closeModal('deleteModal');
   window.showToast?.("Produk berhasil dihapus", "success");
 };
@@ -281,7 +287,7 @@ window.handleTransactionSubmit = async function(e) {
   e.preventDefault();
   const docId = document.getElementById('transProductSelect')?.value;
   const type = document.querySelector('input[name="transType"]:checked')?.value;
-  const product = state.products?.find(p => p.docId === docId);
+  const product = appState.products?.find(p => p.docId === docId);
   if (!product) return;
 
   if (type === 'IN') {
@@ -294,6 +300,6 @@ window.handleTransactionSubmit = async function(e) {
 
   if (typeof saveStateToCloud === 'function') await saveStateToCloud();
 
-  renderKatalogPage(state);
+  renderKatalogPage(appState);
   window.closeModal('transactionModal');
 };
