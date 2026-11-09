@@ -32,7 +32,22 @@ if (logoutBtn) {
   });
 }
 
-// 5. KHUSUS SIDEBAR 
+// 5. Definisikan fungsi switchView dan daftarkan ke window agar bisa dipanggil via onclick di HTML
+window.switchView = function(viewName) {
+  console.log("Switching to view:", viewName);
+  
+  // Contoh logika pergantian view/tab Anda:
+  // Hapus kelas aktif dari semua tab/konten, lalu aktifkan yang dipilih
+  const views = document.querySelectorAll('.view-section');
+  views.forEach(el => el.classList.add('hidden'));
+
+  const targetView = document.getElementById(viewName);
+  if (targetView) {
+    targetView.classList.remove('hidden');
+  }
+};
+
+// KHUSUS SIDEBAR 
 function setupGlobalEventListeners() {
   const openSidebarBtn = document.getElementById('openSidebarMobile');
   const sidebar = document.getElementById('sidebar');
