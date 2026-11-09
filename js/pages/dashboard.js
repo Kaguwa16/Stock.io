@@ -298,8 +298,3 @@ export function renderTopOutgoingLeaderboard(state) {
     `;
   }).join('');
 }
-
-window.forceCloudRefresh = function() {
-      refreshDashboardData();
-      window.showToast("Data berhasil disinkronkan!", "success");
-    };
