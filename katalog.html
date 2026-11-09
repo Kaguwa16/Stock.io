@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master Katalog Produk - Stock.io</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+    }
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 z-30 fixed inset-y-0 left-0 lg:static -translate-x-full lg:translate-x-0">
+      <div class="h-16 flex items-center justify-between px-6 bg-slate-950 border-b border-slate-800">
+        <h1 class="font-bold text-white tracking-wide text-base">Stock & Finance</h1>
+      </div>
+
+      <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-chart-pie text-base w-5"></i>
+          <span>Ringkasan Dasbor</span>
+        </a>
+
+        <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
+          <span>Laporan & Keuangan</span>
+        </a>
+
+        <!-- Active State di Katalog -->
+        <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
+          <i class="fa-solid fa-boxes-packing text-base w-5"></i>
+          <span class="font-bold">Master Katalog Produk</span>
+        </a>
+      </nav>
+
+      <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
+        <i class="fa-solid fa-right-from-bracket text-base"></i>
+        <span>Keluar (Logout)</span>
+      </button>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-y-auto">
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
+        <h2 class="text-sm font-bold text-slate-700">Master Katalog Produk</h2>
+        <button onclick="openModal('productModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+          <i class="fa-solid fa-plus mr-1"></i> Tambah Produk
+        </button>
+      </header>
+
+      <main class="p-4 sm:p-8 space-y-8 max-w-7xl w-full mx-auto">
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <!-- Controls & Filter Bar -->
+          <div class="p-6 border-b flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-lg">Tabel Master Katalog Produk</h3>
+              <p class="text-xs text-slate-400">Kelola harga modal (HPP), harga jual, dan stok real-time.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+              <input type="text" id="tableSearchInput" placeholder="Cari tipe/SKU..." class="pl-3 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              <select id="categoryFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-1.5"></select>
+              <select id="brandFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-1.5">
+                <option value="ALL">Semua Brand</option>
+                <option value="INFINIX">Infinix</option>
+                <option value="IPHONE">iPhone</option>
+                <option value="OPPO">Oppo</option>
+                <option value="REDMI">Redmi</option>
+                <option value="SAMSUNG">Samsung</option>
+                <option value="VIVO">Vivo</option>
+                <option value="XIAOMI">Xiaomi</option>
+              </select>
+              <button onclick="resetFilters()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-xs">Reset</button>
+            </div>
+          </div>
+
+          <!-- Table Content -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] border-b">
+                  <th class="py-3.5 px-4">SKU</th>
+                  <th class="py-3.5 px-4">Nama Produk</th>
+                  <th class="py-3.5 px-4">Kategori</th>
+                  <th class="py-3.5 px-4 text-right">Stok</th>
+                  <th class="py-3.5 px-4 text-right">HPP</th>
+                  <th class="py-3.5 px-4 text-right">Harga Jual</th>
+                  <th class="py-3.5 px-4 text-right">Valuasi</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="masterTableBody" class="divide-y text-slate-700"></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="p-4 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+            <div id="tableInfoText">Menampilkan 0 produk</div>
+            <div id="paginationControls" class="flex items-center space-x-1"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
