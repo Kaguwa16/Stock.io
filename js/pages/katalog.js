@@ -1,5 +1,5 @@
 import { formatIDR } from '../utils.js';
-import { saveStateToCloud } from '../state.js';
+import { state, saveState, saveLocalStorageFallback } from '../state.js'; 
 
 let currentPage = 1;
 const itemsPerPage = 10;
@@ -248,24 +248,26 @@ window.handleProductSubmit = async function(e) {
   const minStock = parseInt(document.getElementById('prodMinStock')?.value, 10) || 10;
   let brand = document.getElementById('prodBrand')?.value.trim() || getBrandName(name);
 
-  if (!appState.products) appState.products = [];
+  if (!state.products) state.products = [];
 
   if (editDocId) {
-    const item = appState.products.find(p => p.docId === editDocId);
+    const item = state.products.find(p => p.docId === editDocId);
     if (item) {
       Object.assign(item, { id: sku, name, category, brand, hpp, price, stock, minStock });
     }
   } else {
-    appState.products.unshift({
+    state.products.unshift({
       docId: `prod_${sku.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
       id: sku, name, category, brand, hpp, price, stock, minStock,
       unit: 'Pcs', outgoing: 0, supplierDamaged: 0, shippingDamaged: 0
     });
   }
 
-  if (typeof saveStateToCloud === 'function') await saveStateToCloud();
+ // Panggil saveState yang benar dari state.js
+  await saveState();
+  saveLocalStorageFallback();
 
-  renderKatalogPage(appState);
+  renderKatalogPage(state);
   window.closeModal('productModal');
   window.showToast?.(`Produk ${name} berhasil disimpan`, 'success');
 };
@@ -276,7 +278,9 @@ window.confirmDeleteProduct = async function() {
 
   appState.products = appState.products.filter(p => p.docId !== docId);
 
-  if (typeof saveStateToCloud === 'function') await saveStateToCloud();
+ // Panggil saveState yang benar dari state.js
+  await saveState();
+  saveLocalStorageFallback();
 
   renderKatalogPage(appState);
   window.closeModal('deleteModal');
@@ -298,7 +302,9 @@ window.handleTransactionSubmit = async function(e) {
     window.showToast?.(`Kulakan Tercatat: +${qtyGood} Stok Bagus`, 'success');
   }
 
-  if (typeof saveStateToCloud === 'function') await saveStateToCloud();
+   // Panggil saveState yang benar dari state.js
+  await saveState();
+  saveLocalStorageFallback();
 
   renderKatalogPage(appState);
   window.closeModal('transactionModal');
