@@ -267,6 +267,22 @@
   
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
+<!-- Inisialisasi Global Cepat agar onclick di HTML langsung terbaca -->
+<script>
+  window.switchView = function(viewName) {
+    console.log("Switching to view:", viewName);
+    const views = document.querySelectorAll('.view-section');
+    views.forEach(el => el.classList.add('hidden'));
+
+    const targetView = document.getElementById(viewName);
+    if (targetView) {
+      targetView.classList.remove('hidden');
+    } else {
+      console.warn(`View dengan ID "${viewName}" tidak ditemukan.`);
+    }
+  };
+</script>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
