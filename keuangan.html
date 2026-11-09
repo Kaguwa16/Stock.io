@@ -43,10 +43,24 @@
         </a>
       </nav>
 
-      <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
+       <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
         <i class="fa-solid fa-right-from-bracket text-base"></i>
         <span>Keluar (Logout)</span>
       </button>
+
+      <div class="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-emerald-700/40 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/30">
+            <i class="fa-solid fa-wifi text-xs animate-pulse"></i>
+          </div>
+          <div class="overflow-hidden">
+            <p class="text-xs font-semibold text-emerald-400 truncate flex items-center gap-1.5">
+              <span id="syncStatusIndicator" class="w-2 h-2 rounded-full bg-emerald-400"></span> Online Cloud
+            </p>
+            <p id="authUserIdDisplay" class="text-[10px] text-slate-400 truncate">Menghubungkan...</p>
+          </div>
+        </div>
+      </div>
     </aside>
 
     <div class="flex-1 flex flex-col overflow-y-auto">
