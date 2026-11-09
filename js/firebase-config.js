@@ -1,6 +1,8 @@
-// ==================== KONFIGURASI FIREBASE ====================
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-stock-app-id';
-const firebaseConfig = {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+export const firebaseConfig = {
   apiKey: "AIzaSyCpkSNCxVKr7pQz6mKZKqlJGz4-k6pMCMQ",
   authDomain: "monitor-stock-1dab6.firebaseapp.com",
   projectId: "monitor-stock-1dab6",
@@ -10,6 +12,7 @@ const firebaseConfig = {
   measurementId: "G-KE8B9FG4H8"
 };
 
-let app, db, auth;
-let currentUser = null;
-let isOfflineFallbackMode = false;
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-stock-app-id';
