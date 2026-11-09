@@ -32,3 +32,21 @@ if (logoutBtn) {
   });
 }
 
+// 5. KHUSUS SIDEBAR 
+function setupGlobalEventListeners() {
+  const openSidebarBtn = document.getElementById('openSidebarMobile');
+  if (openSidebarBtn) {
+    openSidebarBtn.addEventListener('click', () => {
+      document.getElementById('sidebar')?.classList.remove('-translate-x-full');
+      document.getElementById('sidebarOverlay')?.classList.remove('hidden');
+    });
+  }
+
+  const closeSidebar = () => {
+    document.getElementById('sidebar')?.classList.add('-translate-x-full');
+    document.getElementById('sidebarOverlay')?.classList.add('hidden');
+  };
+
+  document.getElementById('closeSidebarMobile')?.addEventListener('click', closeSidebar);
+  document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
+}
