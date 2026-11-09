@@ -33,29 +33,31 @@ if (logoutBtn) {
 }
 
 // 5. Sidebar
-setupGlobalEventListeners();
-
-function setupGlobalEventListeners() {
+document.addEventListener('DOMContentLoaded', () => {
   const openSidebarBtn = document.getElementById('openSidebarMobile');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const closeSidebarBtn = document.getElementById('closeSidebarMobile');
+
+  // Ketika tombol hamburger diklik -> Buka Sidebar
   if (openSidebarBtn) {
     openSidebarBtn.addEventListener('click', () => {
-      document.getElementById('sidebar')?.classList.remove('-translate-x-full');
-      document.getElementById('sidebarOverlay')?.classList.remove('hidden');
+      sidebar?.classList.remove('-translate-x-full');
+      overlay?.classList.remove('hidden');
     });
   }
 
+  // Fungsi untuk menutup sidebar
   const closeSidebar = () => {
-    document.getElementById('sidebar')?.classList.add('-translate-x-full');
-    document.getElementById('sidebarOverlay')?.classList.add('hidden');
+    sidebar?.classList.add('-translate-x-full');
+    overlay?.classList.add('hidden');
   };
 
-  const closeSidebarBtn = document.getElementById('closeSidebarMobile');
-  const overlayBtn = document.getElementById('sidebarOverlay');
-  
+  // Ketika tombol silang (X) atau area gelap (overlay) diklik -> Tutup Sidebar
   if (closeSidebarBtn) {
     closeSidebarBtn.addEventListener('click', closeSidebar);
   }
-  if (overlayBtn) {
-    overlayBtn.addEventListener('click', closeSidebar);
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
   }
-}
+});
