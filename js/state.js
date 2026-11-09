@@ -70,3 +70,12 @@ function loadLocalStorageFallback() {
   }
   notifySubscribers();
 }
+
+export function saveLocalStorageFallback() {
+  try {
+    localStorage.setItem('stock_io_state_fallback', JSON.stringify(state));
+    console.log("Data berhasil disimpan ke LocalStorage");
+  } catch (error) {
+    console.error("Gagal menyimpan ke LocalStorage:", error);
+  }
+}
