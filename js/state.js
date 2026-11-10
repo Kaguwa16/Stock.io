@@ -70,13 +70,14 @@ function loadLocalStorageFallback() {
   if (local) {
     const parsed = JSON.parse(local);
     Object.assign(state, parsed);
+    state.isOffline = true;
   }
   notifySubscribers();
 }
 
 export function saveLocalStorageFallback() {
   try {
-    localStorage.setItem('stock_io_state_fallback', JSON.stringify(state));
+    localStorage.setItem('stock_store_v1', JSON.stringify(state));
     console.log("Data berhasil disimpan ke LocalStorage");
   } catch (error) {
     console.error("Gagal menyimpan ke LocalStorage:", error);
