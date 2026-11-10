@@ -31,6 +31,7 @@ export function initCloudSync() {
       state.products = data.products || [];
       state.categories = data.categories || state.categories;
       state.expenses = data.expenses || [];
+      state.sales = data.sales || [];
       state.monthlyArchives = data.monthlyArchives || [];
       state.activePeriodName = data.activePeriodName || "November 2026";
     }
