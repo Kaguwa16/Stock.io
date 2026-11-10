@@ -13,6 +13,11 @@ export const state = {
 
 const subscribers = [];
 
+function setSyncStatus(online) {
+  const dot = document.getElementById('syncStatusIndicator');
+  if (dot) dot.className = 'w-2 h-2 rounded-full ' + (online ? 'bg-emerald-400' : 'bg-amber-400');
+}
+
 export function subscribeState(callback) {
   subscribers.push(callback);
 }
