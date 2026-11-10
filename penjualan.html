@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penjualan - Stock.io</title>
+ 
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+ 
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+    }
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+ 
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 z-30 fixed inset-y-0 left-0 lg:static -translate-x-full lg:translate-x-0 shadow-2xl">
+      <div class="h-16 flex items-center justify-between px-6 bg-slate-950 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-white tracking-wide text-base leading-tight">Stock & Finance</h1>
+            <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Realtime</span>
+          </div>
+        </div>
+        <button id="closeSidebarMobile" class="lg:hidden text-slate-400 hover:text-white p-2">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+ 
+      <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-chart-pie text-base w-5"></i>
+          <span>Ringkasan Dasbor</span>
+        </a>
+ 
+        <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
+          <span>Laporan & Keuangan</span>
+        </a>
+ 
+        <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-boxes-packing text-base w-5"></i>
+          <span>Master Katalog Produk</span>
+        </a>
+ 
+        <!-- Active State: Penjualan + Submenu -->
+        <div>
+          <button id="penjualanToggle" type="button" class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
+            <span class="flex items-center space-x-3">
+              <i class="fa-solid fa-cart-shopping text-base w-5"></i>
+              <span class="font-bold">Penjualan</span>
+            </span>
+            <i id="penjualanChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform rotate-180"></i>
+          </button>
+          <div id="penjualanSub" class="mt-1.5 ml-4 pl-4 border-l border-slate-700 space-y-1">
+            <button type="button" data-channel="online" class="subNavBtn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition">
+              <i class="fa-solid fa-globe w-4"></i><span>Penjualan Online</span>
+            </button>
+            <button type="button" data-channel="offline" class="subNavBtn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition">
+              <i class="fa-solid fa-store w-4"></i><span>Penjualan Offline</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+ 
+      <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
+        <i class="fa-solid fa-right-from-bracket text-base"></i>
+        <span>Keluar (Logout)</span>
+      </button>
+ 
+      <div class="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-emerald-700/40 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/30">
+            <i class="fa-solid fa-wifi text-xs animate-pulse"></i>
+          </div>
+          <div class="overflow-hidden">
+            <p class="text-xs font-semibold text-emerald-400 truncate flex items-center gap-1.5">
+              <span id="syncStatusIndicator" class="w-2 h-2 rounded-full bg-emerald-400"></span> Online Cloud
+            </p>
+            <p id="authUserIdDisplay" class="text-[10px] text-slate-400 truncate">Menghubungkan...</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+ 
+    <div class="flex-1 flex flex-col overflow-y-auto">
+      <!-- Top Header -->
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
+        <button id="openSidebarMobile" class="lg:hidden text-slate-600 hover:text-slate-900 focus:outline-none">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+        <h2 id="pageTitle" class="text-sm font-bold text-slate-700">Penjualan Offline</h2>
+        <button onclick="openSaleModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+          <i class="fa-solid fa-plus mr-1"></i> Tambah Penjualan
+        </button>
+      </header>
+ 
+      <main class="p-4 sm:p-8 space-y-6 max-w-7xl w-full mx-auto">
+ 
+        <!-- Status Packing (hanya tampilan info, tidak bisa diklik) -->
+        <section class="grid grid-cols-2 gap-3 sm:gap-4 select-none">
+          <div class="p-4 rounded-2xl border bg-amber-50 border-amber-200 text-amber-800 cursor-default">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wide"><i class="fa-solid fa-hourglass-half mr-1.5"></i>Belum Dipacking</span>
+              <span id="countBelum" class="text-lg font-extrabold">0</span>
+            </div>
+            <p id="pcsBelum" class="text-[11px] mt-1 opacity-70">0 pcs</p>
+          </div>
+          <div class="p-4 rounded-2xl border bg-emerald-50 border-emerald-200 text-emerald-800 cursor-default">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wide"><i class="fa-solid fa-box-open mr-1.5"></i>Sudah Dipacking</span>
+              <span id="countSudah" class="text-lg font-extrabold">0</span>
+            </div>
+            <p id="pcsSudah" class="text-[11px] mt-1 opacity-70">0 pcs</p>
+          </div>
+        </section>
+ 
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <!-- Controls -->
+          <div class="p-6 border-b flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 id="tableTitle" class="font-bold text-slate-800 text-lg">Data Penjualan</h3>
+              <p class="text-xs text-slate-400">Data otomatis diarsipkan per bulan. Bulan baru dimulai dari daftar kosong, bulan lama tetap bisa dibuka di arsip.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+              <input type="text" id="searchInput" placeholder="Cari ID / tipe / resi..." class="pl-3 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              <select id="statusFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-1.5">
+                <option value="ALL">Semua Status</option>
+                <option value="BELUM">Belum Dipacking</option>
+                <option value="SUDAH">Sudah Dipacking</option>
+              </select>
+              <select id="monthFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-1.5"></select>
+              <button onclick="resetFilters()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-xs">Reset</button>
+            </div>
+          </div>
+ 
+          <div id="archiveBanner" class="hidden px-6 py-2.5 bg-amber-50 border-b border-amber-100 text-xs text-amber-700">
+            <i class="fa-solid fa-box-archive mr-1.5"></i> Anda sedang melihat <b>arsip bulan lalu</b> (hanya baca).
+          </div>
+ 
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] border-b">
+                  <th class="py-3.5 px-4">Tanggal</th>
+                  <th class="py-3.5 px-4">ID</th>
+                  <th class="py-3.5 px-4">Marketplace</th>
+                  <th class="py-3.5 px-4">Tipe HP Pembeli</th>
+                  <th class="py-3.5 px-4">Resi</th>
+                  <th class="py-3.5 px-4">Persamaan HP</th>
+                  <th class="py-3.5 px-4 text-right">Jumlah (pcs)</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="saleTableBody" class="divide-y text-slate-700"></tbody>
+            </table>
+          </div>
+ 
+          <div class="p-4 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+            <div id="tableInfoText">Menampilkan 0 data</div>
+            <div id="totalPcsText" class="font-semibold"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+ 
+  <!-- ==================== MODAL TAMBAH / EDIT PENJUALAN ==================== -->
+  <div id="saleModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-100 my-8">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <h3 id="saleModalTitle" class="font-bold text-sm">Tambah Penjualan</h3>
+        <button onclick="closeModal('saleModal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="saleForm" onsubmit="handleSaleSubmit(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <input type="hidden" id="editSaleId">
+ 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+            <input type="date" id="saleDate" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Channel</label>
+            <select id="saleChannel" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="offline">Offline</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+        </div>
+ 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ID</label>
+            <input type="text" id="saleCode" required placeholder="Contoh: TRX-001" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Marketplace</label>
+            <input type="text" id="saleMarketplace" list="marketplaceList" placeholder="Contoh: Shopee" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+            <datalist id="marketplaceList">
+              <option value="Shopee"><option value="Tokopedia"><option value="TikTok Shop"><option value="Lazada"><option value="Blibli"><option value="WhatsApp"><option value="Toko Langsung">
+            </datalist>
+          </div>
+        </div>
+ 
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe HP Pembeli</label>
+          <input type="text" id="saleHp" required placeholder="Contoh: Samsung A52" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+ 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Resi</label>
+            <input type="text" id="saleResi" placeholder="Nomor resi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Persamaan HP</label>
+            <input type="text" id="salePersamaan" placeholder="Contoh: A52 = A72" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+ 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (pcs)</label>
+            <input type="number" id="saleQty" required min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Status Packing</label>
+            <select id="salePacked" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="false">Belum dipacking</option>
+              <option value="true">Sudah dipacking</option>
+            </select>
+          </div>
+        </div>
+ 
+        <div class="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeModal('saleModal')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200 transition">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+ 
+  <!-- ==================== MODAL HAPUS ==================== -->
+  <div id="deleteSaleModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-100">
+      <div class="p-6 text-center space-y-4">
+        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-lg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Hapus Data Penjualan?</h3>
+          <p id="deleteSaleName" class="text-xs text-slate-500 mt-1">Data ini akan dihapus permanen.</p>
+        </div>
+        <input type="hidden" id="deleteSaleId">
+        <div class="flex items-center justify-center space-x-2 pt-2">
+          <button onclick="closeModal('deleteSaleModal')" class="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200 transition">Batal</button>
+          <button onclick="confirmDeleteSale()" class="flex-1 px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition">Hapus</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
