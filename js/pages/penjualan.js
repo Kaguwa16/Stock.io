@@ -4,11 +4,8 @@ import { state, saveState, saveLocalStorageFallback } from '../state.js';
 let appState = { sales: [], products: [] };
 let channel = 'offline';      // 'online' | 'offline'
 let statusFilter = 'ALL';     // 'ALL' | 'BELUM' | 'SUDAH'
-let selectedMonth = '';       // 'YYYY-MM'
 let currentPage = 1;
 const itemsPerPage = 10;
-
-const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
 const byId = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -28,11 +25,13 @@ function findProduct(docId) {
 // ==================== ENTRY POINT (dipanggil dari main.js) ====================
 export function renderPenjualanPage(stateData) {
   appState = stateData || state || appState;
+  if (!appState.sales) appState.sales = [];
+
+  // Hapus otomatis data yang umurnya sudah 1 bulan (berjalan di semua halaman)
+  purgeExpiredSales();
 
   const tbody = byId('saleTableBody');
   if (!tbody) return; // Keluar jika bukan halaman penjualan
-
-  if (!appState.sales) appState.sales = [];
 
   // channel dari URL (?tipe=online) hanya dibaca sekali saat pertama render
   if (!tbody.dataset.initialized) {
@@ -46,38 +45,45 @@ export function renderPenjualanPage(stateData) {
 }
 
 // ==================== HELPER TANGGAL ====================
-function currentMonthKey() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
+const pad2 = (n) => String(n).padStart(2, '0');
+
 function todayStr() {
   const d = new Date();
-  return currentMonthKey() + '-' + String(d.getDate()).padStart(2, '0');
-}
-function monthLabel(key) {
-  const [y, m] = key.split('-');
-  return BULAN[parseInt(m, 10) - 1] + ' ' + y;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 function fmtDate(s) {
   const [y, m, d] = (s || '').split('-');
   return `${d}/${m}/${y}`;
 }
 
-// ==================== FILTER BULAN (ARSIP) ====================
-function buildMonthOptions() {
-  const select = byId('monthFilter');
-  if (!select) return;
+// ==================== MASA SIMPAN: 1 BULAN PER DATA ====================
+// Tiap data punya umur sendiri: tanggal 10 Nov -> dihapus 10 Des, tanggal 15 Nov -> dihapus 15 Des.
+// Kalau tanggal tujuan tidak ada (mis. 31 Jan), dipakai hari terakhir bulan itu (28/29 Feb).
+function expiryDate(tanggal) {
+  const [y, m, d] = (tanggal || todayStr()).split('-').map(Number);
+  const ny = m === 12 ? y + 1 : y;
+  const nm = m === 12 ? 1 : m + 1;
+  const lastDay = new Date(ny, nm, 0).getDate();
+  return `${ny}-${pad2(nm)}-${pad2(Math.min(d, lastDay))}`;
+}
+function isExpired(sale) {
+  return todayStr() >= expiryDate(sale.tanggal);
+}
 
-  const keys = new Set([currentMonthKey()]);
-  getSales().forEach(s => { if (s.tanggal) keys.add(s.tanggal.slice(0, 7)); });
-  const sorted = [...keys].sort().reverse();
+let purging = false;
+async function purgeExpiredSales() {
+  if (purging) return;
+  const sales = getSales();
+  const keep = sales.filter(s => !isExpired(s));
+  if (keep.length === sales.length) return; // tidak ada yang kedaluwarsa, tidak ada write
 
-  select.innerHTML = sorted.map(k =>
-    `<option value="${k}">${monthLabel(k)}${k === currentMonthKey() ? ' (Bulan ini)' : ' (Arsip)'}</option>`
-  ).join('');
-
-  if (!selectedMonth || !keys.has(selectedMonth)) selectedMonth = currentMonthKey();
-  select.value = selectedMonth;
+  purging = true;
+  try {
+    appState.sales = keep;  // stok TIDAK dikembalikan: barangnya memang sudah keluar
+    await persist();
+  } finally {
+    purging = false;
+  }
 }
 
 // ==================== RENDER TABEL ====================
@@ -85,12 +91,8 @@ function renderSalesTable() {
   const tbody = byId('saleTableBody');
   if (!tbody) return;
 
-  buildMonthOptions();
-  const isArchive = selectedMonth !== currentMonthKey();
-  byId('archiveBanner')?.classList.toggle('hidden', !isArchive);
-
   const q = (byId('searchInput')?.value || '').toLowerCase().trim();
-  const base = getSales().filter(s => s.channel === channel && (s.tanggal || '').slice(0, 7) === selectedMonth);
+  const base = getSales().filter(s => s.channel === channel && !isExpired(s));
   const belum = base.filter(s => !s.packed);
   const sudah = base.filter(s => s.packed);
   const sumQty = (arr) => arr.reduce((a, s) => a + (s.qty || 0), 0);
@@ -117,12 +119,12 @@ function renderSalesTable() {
   const pageItems = rows.slice(startIdx, startIdx + itemsPerPage);
 
   const chLabel = channel === 'online' ? 'Online' : 'Offline';
-  byId('tableTitle').innerText = `Penjualan ${chLabel} - ${monthLabel(selectedMonth)}`;
+  byId('tableTitle').innerText = `Penjualan ${chLabel}`;
   byId('pageTitle').innerText = `Penjualan ${chLabel}`;
 
   tbody.innerHTML = pageItems.length ? pageItems.map(s => `
     <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-      <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}</td>
+      <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}<div class="text-[10px] text-slate-400">dihapus ${fmtDate(expiryDate(s.tanggal))}</div></td>
       <td class="py-3 px-4 font-semibold text-slate-800">${esc(s.kode)}</td>
       <td class="py-3 px-4">${esc(s.marketplace) || '<span class="text-slate-300">-</span>'}</td>
       <td class="py-3 px-4">${esc(s.hp)}</td>
@@ -130,16 +132,13 @@ function renderSalesTable() {
       <td class="py-3 px-4">${esc(s.persamaan) || '<span class="text-slate-300">-</span>'}</td>
       <td class="py-3 px-4 text-right font-semibold">${s.qty}</td>
       <td class="py-3 px-4 text-center">
-        ${isArchive
-          ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${s.packed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${s.packed ? 'Sudah' : 'Belum'}</span>`
-          : `<button type="button" onclick="togglePacked('${s.docId}')" title="Klik untuk ubah status" class="px-2.5 py-1 rounded-full text-[10px] font-semibold transition ${s.packed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}">
+        ${`<button type="button" onclick="togglePacked('${s.docId}')" title="Klik untuk ubah status" class="px-2.5 py-1 rounded-full text-[10px] font-semibold transition ${s.packed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}">
               <i class="fa-solid ${s.packed ? 'fa-check' : 'fa-hourglass-half'} mr-1"></i>${s.packed ? 'Sudah Dipacking' : 'Belum Dipacking'}
             </button>`}
       </td>
       <td class="py-3 px-4 text-center whitespace-nowrap">
-        ${isArchive ? '<span class="text-slate-300 text-xs"><i class="fa-solid fa-lock"></i></span>' : `
-        <button type="button" onclick="openSaleModal('${s.docId}')" title="Edit" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
-        <button type="button" onclick="openDeleteSale('${s.docId}')" title="Hapus" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>`}
+                <button type="button" onclick="openSaleModal('${s.docId}')" title="Edit" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button type="button" onclick="openDeleteSale('${s.docId}')" title="Hapus" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
       </td>
     </tr>`).join('')
     : `<tr><td colspan="9" class="text-center py-8 text-slate-400"><p class="text-xs font-semibold">Belum ada data</p></td></tr>`;
@@ -276,7 +275,6 @@ function setupPenjualanEventListeners() {
 
   once(byId('searchInput'), 'input', () => { currentPage = 1; renderSalesTable(); });
   once(byId('statusFilter'), 'change', (e) => { statusFilter = e.target.value; currentPage = 1; renderSalesTable(); });
-  once(byId('monthFilter'), 'change', (e) => { selectedMonth = e.target.value; currentPage = 1; renderSalesTable(); });
 
   document.querySelectorAll('.subNavBtn').forEach(btn => {
     once(btn, 'click', () => {
@@ -327,7 +325,6 @@ window.resetPenjualanFilters = function () {
   if (byId('searchInput')) byId('searchInput').value = '';
   if (byId('statusFilter')) byId('statusFilter').value = 'ALL';
   statusFilter = 'ALL';
-  selectedMonth = currentMonthKey();
   currentPage = 1;
   renderSalesTable();
   window.showToast?.('Filter di-reset', 'info');
@@ -388,6 +385,12 @@ window.handleSaleSubmit = async function (e) {
     packed: byId('salePacked').value === 'true'
   };
 
+  // Data yang umurnya sudah 1 bulan akan langsung terhapus otomatis, jadi ditolak dari awal
+  if (isExpired({ tanggal: data.tanggal })) {
+    notify('Tanggal sudah lebih dari 1 bulan lalu, data akan langsung terhapus otomatis. Gunakan tanggal yang lebih baru.', 'error');
+    return;
+  }
+
   // ----- Produk katalog (persamaan HP) -----
   const typed = byId('salePersamaan').value.trim();
   const product = findProduct(byId('salePersamaanId').value);
@@ -434,7 +437,6 @@ window.handleSaleSubmit = async function (e) {
   await persist();
 
   channel = data.channel;
-  selectedMonth = data.tanggal.slice(0, 7);
   renderSalesTable();
   window.closeModal('saleModal');
   notify(editItem ? 'Data penjualan diperbarui' : 'Penjualan berhasil disimpan');
