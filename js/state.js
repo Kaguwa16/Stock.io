@@ -5,6 +5,7 @@ export const state = {
   products: [],
   categories: ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"],
   expenses: [],
+  sales: [],
   monthlyArchives: [],
   activePeriodName: "November 2026",
   isOffline: false
@@ -52,6 +53,7 @@ export async function saveState() {
       products: state.products,
       categories: state.categories,
       expenses: state.expenses,
+      sales: state.sales,
       monthlyArchives: state.monthlyArchives,
       activePeriodName: state.activePeriodName,
       updatedAt: new Date().toISOString()
