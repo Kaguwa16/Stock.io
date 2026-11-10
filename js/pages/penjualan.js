@@ -2,7 +2,7 @@ import { state, saveState, saveLocalStorageFallback } from '../state.js';
 
 // ==================== STATE LEVEL MODUL ====================
 let appState = { sales: [], products: [] };
-let channel = 'offline';      // 'online' | 'offline'
+let channel = 'offline';      // 'online' | 'offline' | 'status'
 let statusFilter = 'ALL';     // 'ALL' | 'BELUM' | 'SUDAH'
 let currentPage = 1;
 const itemsPerPage = 10;
@@ -22,21 +22,19 @@ function findProduct(docId) {
   return docId ? getProducts().find(p => p.docId === docId) : null;
 }
 
-// ==================== ENTRY POINT (dipanggil dari main.js) ====================
+// ==================== ENTRY POINT ====================
 export function renderPenjualanPage(stateData) {
   appState = stateData || state || appState;
   if (!appState.sales) appState.sales = [];
 
-  // Hapus otomatis data yang umurnya sudah 1 bulan (berjalan di semua halaman)
   purgeExpiredSales();
 
   const tbody = byId('saleTableBody');
-  if (!tbody) return; // Keluar jika bukan halaman penjualan
+  if (!tbody) return;
 
-  // channel dari URL (?tipe=online) hanya dibaca sekali saat pertama render
   if (!tbody.dataset.initialized) {
     const tipe = new URLSearchParams(location.search).get('tipe');
-    if (tipe === 'online' || tipe === 'offline') channel = tipe;
+    if (['online', 'offline', 'status'].includes(tipe)) channel = tipe;
     tbody.dataset.initialized = 'true';
   }
 
@@ -56,9 +54,6 @@ function fmtDate(s) {
   return `${d}/${m}/${y}`;
 }
 
-// ==================== MASA SIMPAN: 1 BULAN PER DATA ====================
-// Tiap data punya umur sendiri: tanggal 10 Nov -> dihapus 10 Des, tanggal 15 Nov -> dihapus 15 Des.
-// Kalau tanggal tujuan tidak ada (mis. 31 Jan), dipakai hari terakhir bulan itu (28/29 Feb).
 function expiryDate(tanggal) {
   const [y, m, d] = (tanggal || todayStr()).split('-').map(Number);
   const ny = m === 12 ? y + 1 : y;
@@ -75,11 +70,11 @@ async function purgeExpiredSales() {
   if (purging) return;
   const sales = getSales();
   const keep = sales.filter(s => !isExpired(s));
-  if (keep.length === sales.length) return; // tidak ada yang kedaluwarsa, tidak ada write
+  if (keep.length === sales.length) return;
 
   purging = true;
   try {
-    appState.sales = keep;  // stok TIDAK dikembalikan: barangnya memang sudah keluar
+    appState.sales = keep;
     await persist();
   } finally {
     purging = false;
@@ -89,69 +84,144 @@ async function purgeExpiredSales() {
 // ==================== RENDER TABEL ====================
 function renderSalesTable() {
   const tbody = byId('saleTableBody');
+  const thead = document.querySelector('table thead');
   if (!tbody) return;
 
+  const isStatusView = channel === 'status';
+
+  // Filter Data
   const q = (byId('searchInput')?.value || '').toLowerCase().trim();
-  const base = getSales().filter(s => s.channel === channel && !isExpired(s));
+  
+  // Jika view Status Penjualan, ambil data Penjualan Online
+  const base = isStatusView
+    ? getSales().filter(s => s.channel === 'online' && !isExpired(s))
+    : getSales().filter(s => s.channel === channel && !isExpired(s));
+
   const belum = base.filter(s => !s.packed);
   const sudah = base.filter(s => s.packed);
   const sumQty = (arr) => arr.reduce((a, s) => a + (s.qty || 0), 0);
 
-  // Kotak status (hanya info)
+  // Update statistik ringkasan
   byId('countBelum').innerText = belum.length;
   byId('countSudah').innerText = sudah.length;
   byId('pcsBelum').innerText = sumQty(belum) + ' pcs';
   byId('pcsSudah').innerText = sumQty(sudah) + ' pcs';
 
   let rows = base;
-  if (statusFilter === 'BELUM') rows = belum;
-  else if (statusFilter === 'SUDAH') rows = sudah;
+  if (!isStatusView) {
+    if (statusFilter === 'BELUM') rows = belum;
+    else if (statusFilter === 'SUDAH') rows = sudah;
+  }
   if (q) {
     rows = rows.filter(s => [s.kode, s.marketplace, s.hp, s.resi, s.persamaan].join(' ').toLowerCase().includes(q));
   }
   rows = [...rows].sort((a, b) => ((b.tanggal || '') + (b.createdAt || '')).localeCompare((a.tanggal || '') + (a.createdAt || '')));
 
-  // Pagination: 10 data per halaman
+  // Header Tabel Dinamis
+  if (thead) {
+    if (isStatusView) {
+      thead.innerHTML = `
+        <tr class="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] border-b">
+          <th class="py-3.5 px-4">Tanggal</th>
+          <th class="py-3.5 px-4">ID</th>
+          <th class="py-3.5 px-4">Persamaan HP</th>
+          <th class="py-3.5 px-4 text-right">Jumlah (pcs)</th>
+          <th class="py-3.5 px-4 text-center">Status</th>
+          <th class="py-3.5 px-4 text-center">Aksi</th>
+        </tr>`;
+    } else {
+      thead.innerHTML = `
+        <tr class="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] border-b">
+          <th class="py-3.5 px-4">Tanggal</th>
+          <th class="py-3.5 px-4">ID</th>
+          <th class="py-3.5 px-4">Marketplace</th>
+          <th class="py-3.5 px-4">Tipe HP Pembeli</th>
+          <th class="py-3.5 px-4">Resi</th>
+          <th class="py-3.5 px-4">Persamaan HP</th>
+          <th class="py-3.5 px-4 text-right">Jumlah (pcs)</th>
+          <th class="py-3.5 px-4 text-center">Status</th>
+          <th class="py-3.5 px-4 text-center">Aksi</th>
+        </tr>`;
+    }
+  }
+
+  // Pagination
   const totalItems = rows.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
   const startIdx = (currentPage - 1) * itemsPerPage;
   const pageItems = rows.slice(startIdx, startIdx + itemsPerPage);
 
-  const chLabel = channel === 'online' ? 'Online' : 'Offline';
-  byId('tableTitle').innerText = `Penjualan ${chLabel}`;
-  byId('pageTitle').innerText = `Penjualan ${chLabel}`;
+  const titleText = isStatusView ? 'Status Penjualan Online' : `Penjualan ${channel === 'online' ? 'Online' : 'Offline'}`;
+  byId('tableTitle').innerText = titleText;
+  byId('pageTitle').innerText = titleText;
 
-  tbody.innerHTML = pageItems.length ? pageItems.map(s => `
-    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-      <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}<div class="text-[10px] text-slate-400">dihapus ${fmtDate(expiryDate(s.tanggal))}</div></td>
-      <td class="py-3 px-4 font-semibold text-slate-800">${esc(s.kode)}</td>
-      <td class="py-3 px-4">${esc(s.marketplace) || '<span class="text-slate-300">-</span>'}</td>
-      <td class="py-3 px-4">${esc(s.hp)}</td>
-      <td class="py-3 px-4">${esc(s.resi) || '<span class="text-slate-300">-</span>'}</td>
-      <td class="py-3 px-4">${esc(s.persamaan) || '<span class="text-slate-300">-</span>'}</td>
-      <td class="py-3 px-4 text-right font-semibold">${s.qty}</td>
-      <td class="py-3 px-4 text-center">
-        ${`<button type="button" onclick="togglePacked('${s.docId}')" title="Klik untuk ubah status" class="px-2.5 py-1 rounded-full text-[10px] font-semibold transition ${s.packed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}">
-              <i class="fa-solid ${s.packed ? 'fa-check' : 'fa-hourglass-half'} mr-1"></i>${s.packed ? 'Sudah Dipacking' : 'Belum Dipacking'}
-            </button>`}
-      </td>
-      <td class="py-3 px-4 text-center whitespace-nowrap">
-                <button type="button" onclick="openSaleModal('${s.docId}')" title="Edit" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
-        <button type="button" onclick="openDeleteSale('${s.docId}')" title="Hapus" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
-      </td>
-    </tr>`).join('')
-    : `<tr><td colspan="9" class="text-center py-8 text-slate-400"><p class="text-xs font-semibold">Belum ada data</p></td></tr>`;
+  // Render Baris Data
+  if (!pageItems.length) {
+    const colSpan = isStatusView ? 6 : 9;
+    tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-8 text-slate-400"><p class="text-xs font-semibold">Belum ada data</p></td></tr>`;
+  } else if (isStatusView) {
+    // Mode View: Status Penjualan
+    tbody.innerHTML = pageItems.map(s => {
+      const currentStatus = s.deliveryStatus || (s.packed ? 'TERKIRIM' : 'PROSES');
+      let statusBadge = '';
+      if (currentStatus === 'DITERIMA') {
+        statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700"><i class="fa-solid fa-circle-check mr-1"></i>Diterima</span>';
+      } else if (currentStatus === 'PECAH') {
+        statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700"><i class="fa-solid fa-heart-crack mr-1"></i>Pecah / Rusak</span>';
+      } else {
+        statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-700"><i class="fa-solid fa-truck-fast mr-1"></i>Terkirim (Sudah Dipacking)</span>';
+      }
+
+      return `
+        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+          <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}<div class="text-[10px] text-slate-400">dihapus ${fmtDate(expiryDate(s.tanggal))}</div></td>
+          <td class="py-3 px-4 font-semibold text-slate-800">${esc(s.kode)}</td>
+          <td class="py-3 px-4">${esc(s.persamaan) || '<span class="text-slate-300">-</span>'}</td>
+          <td class="py-3 px-4 text-right font-semibold">${s.qty}</td>
+          <td class="py-3 px-4 text-center">${statusBadge}</td>
+          <td class="py-3 px-4 text-center whitespace-nowrap space-x-1">
+            <button type="button" onclick="setDeliveryStatus('${s.docId}', 'DITERIMA')" title="Tandai Diterima" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold transition">
+              <i class="fa-solid fa-check mr-1"></i>Diterima
+            </button>
+            <button type="button" onclick="setDeliveryStatus('${s.docId}', 'PECAH')" title="Tandai Pecah" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition">
+              <i class="fa-solid fa-ban mr-1"></i>Pecah
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+  } else {
+    // Mode View Biasa: Online / Offline
+    tbody.innerHTML = pageItems.map(s => `
+      <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+        <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}<div class="text-[10px] text-slate-400">dihapus ${fmtDate(expiryDate(s.tanggal))}</div></td>
+        <td class="py-3 px-4 font-semibold text-slate-800">${esc(s.kode)}</td>
+        <td class="py-3 px-4">${esc(s.marketplace) || '<span class="text-slate-300">-</span>'}</td>
+        <td class="py-3 px-4">${esc(s.hp)}</td>
+        <td class="py-3 px-4">${esc(s.resi) || '<span class="text-slate-300">-</span>'}</td>
+        <td class="py-3 px-4">${esc(s.persamaan) || '<span class="text-slate-300">-</span>'}</td>
+        <td class="py-3 px-4 text-right font-semibold">${s.qty}</td>
+        <td class="py-3 px-4 text-center">
+          <button type="button" onclick="togglePacked('${s.docId}')" title="Klik untuk ubah status" class="px-2.5 py-1 rounded-full text-[10px] font-semibold transition ${s.packed ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}">
+            <i class="fa-solid ${s.packed ? 'fa-check' : 'fa-hourglass-half'} mr-1"></i>${s.packed ? 'Sudah Dipacking' : 'Belum Dipacking'}
+          </button>
+        </td>
+        <td class="py-3 px-4 text-center whitespace-nowrap">
+          <button type="button" onclick="openSaleModal('${s.docId}')" title="Edit" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button type="button" onclick="openDeleteSale('${s.docId}')" title="Hapus" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
+        </td>
+      </tr>`).join('');
+  }
 
   byId('tableInfoText').innerText = `Menampilkan ${totalItems === 0 ? 0 : startIdx + 1} - ${Math.min(startIdx + itemsPerPage, totalItems)} dari ${totalItems} data`;
   byId('totalPcsText').innerText = 'Total: ' + sumQty(rows) + ' pcs';
   renderPagination(totalPages);
 
-  // Highlight submenu sidebar
+  // Highlight submenu aktif di sidebar
   document.querySelectorAll('.subNavBtn').forEach(b => {
     const on = b.dataset.channel === channel;
     b.className = 'subNavBtn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition ' +
-      (on ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white');
+      (on ? 'bg-slate-800 text-white font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-white');
   });
 }
 
@@ -179,13 +249,12 @@ window.changePenjualanPage = function (page) {
   renderSalesTable();
 };
 
-// ==================== DROPDOWN PRODUK KATALOG (Persamaan HP) ====================
+// ==================== DROPDOWN PRODUK KATALOG ====================
 function getEditingSale() {
   const editId = byId('editSaleId')?.value;
   return editId ? getSales().find(x => x.docId === editId) : null;
 }
 
-// Stok yang masih bisa dipakai. Saat edit, jumlah yang dulu sudah dikurangkan dihitung kembali.
 function getAvailableStock(docId, editItem) {
   const p = findProduct(docId);
   if (!p) return 0;
@@ -264,7 +333,7 @@ function updatePersamaanInfo() {
   }
 }
 
-// ==================== EVENT LISTENERS (dipasang sekali) ====================
+// ==================== EVENT LISTENERS ====================
 function setupPenjualanEventListeners() {
   const once = (el, evt, fn) => {
     if (el && !el.dataset.listenerAttached) {
@@ -281,7 +350,7 @@ function setupPenjualanEventListeners() {
       channel = btn.dataset.channel;
       currentPage = 1;
       renderSalesTable();
-      byId('sidebar')?.classList.add('-translate-x-full'); // tutup sidebar di HP
+      byId('sidebar')?.classList.add('-translate-x-full');
     });
   });
 
@@ -290,10 +359,9 @@ function setupPenjualanEventListeners() {
     byId('penjualanChevron')?.classList.toggle('rotate-180');
   });
 
-  // Dropdown produk katalog
   const pInput = byId('salePersamaan');
   once(pInput, 'input', () => {
-    byId('salePersamaanId').value = '';   // ketikan baru = pilihan lama dibatalkan
+    byId('salePersamaanId').value = '';
     updatePersamaanInfo();
     renderPersamaanDropdown();
   });
@@ -316,11 +384,10 @@ function setupPenjualanEventListeners() {
   }
 }
 
-// ==================== MODAL (fallback jika belum ada dari katalog.js) ====================
 if (!window.openModal) window.openModal = (id) => document.getElementById(id)?.classList.remove('hidden');
 if (!window.closeModal) window.closeModal = (id) => document.getElementById(id)?.classList.add('hidden');
 
-// ==================== AKSI (nama diberi ciri penjualan agar tidak bentrok dgn katalog.js) ====================
+// ==================== AKSI PENJUALAN & STATUS ====================
 window.resetPenjualanFilters = function () {
   if (byId('searchInput')) byId('searchInput').value = '';
   if (byId('statusFilter')) byId('statusFilter').value = 'ALL';
@@ -330,12 +397,25 @@ window.resetPenjualanFilters = function () {
   window.showToast?.('Filter di-reset', 'info');
 };
 
+// Fungsi baru untuk mengubah status penerimaan (Diterima / Pecah)
+window.setDeliveryStatus = async function (docId, newStatus) {
+  const item = getSales().find(x => x.docId === docId);
+  if (!item) return;
+
+  item.deliveryStatus = newStatus;
+  await persist();
+  renderSalesTable();
+
+  const label = newStatus === 'DITERIMA' ? 'Diterima' : 'Pecah / Rusak';
+  notify(`Status pengiriman ${item.kode} diperbarui: ${label}`, newStatus === 'PECAH' ? 'error' : 'success');
+};
+
 window.openSaleModal = function (docId) {
   byId('saleForm')?.reset();
   byId('editSaleId').value = '';
   byId('salePersamaanId').value = '';
   byId('saleDate').value = todayStr();
-  byId('saleChannel').value = channel;
+  byId('saleChannel').value = channel === 'status' ? 'online' : channel;
   byId('salePacked').value = 'false';
   byId('saleQty').value = 1;
   byId('saleModalTitle').innerText = 'Tambah Penjualan';
@@ -363,7 +443,7 @@ window.openSaleModal = function (docId) {
 };
 
 async function persist() {
-  await saveState();            // menyimpan products (stok) dan sales sekaligus
+  await saveState();
   saveLocalStorageFallback();
 }
 
@@ -385,17 +465,14 @@ window.handleSaleSubmit = async function (e) {
     packed: byId('salePacked').value === 'true'
   };
 
-  // Data yang umurnya sudah 1 bulan akan langsung terhapus otomatis, jadi ditolak dari awal
   if (isExpired({ tanggal: data.tanggal })) {
-    notify('Tanggal sudah lebih dari 1 bulan lalu, data akan langsung terhapus otomatis. Gunakan tanggal yang lebih baru.', 'error');
+    notify('Tanggal sudah lebih dari 1 bulan lalu, data akan langsung terhapus otomatis.', 'error');
     return;
   }
 
-  // ----- Produk katalog (persamaan HP) -----
   const typed = byId('salePersamaan').value.trim();
   const product = findProduct(byId('salePersamaanId').value);
 
-  // Data lama (teks bebas / produk yang sudah dihapus dari katalog) boleh tetap dipertahankan saat diedit
   const keepLegacyText = !!editItem && typed !== '' && typed === editItem.persamaan &&
     (!editItem.productDocId || !findProduct(editItem.productDocId));
 
@@ -415,7 +492,6 @@ window.handleSaleSubmit = async function (e) {
     }
   }
 
-  // Kembalikan stok lama (kalau edit), lalu kurangi stok sesuai jumlah baru
   if (prevProduct) prevProduct.stock = (prevProduct.stock || 0) + prevQty;
   if (product) product.stock = (product.stock || 0) - data.qty;
 
