@@ -6,6 +6,9 @@ const itemsPerPage = 10;
 
 // Variabel penampung state di level modul agar bisa diakses semua fungsi window.*
 let appState = { products: [], categories: [] };
+let editingCatIndex = -1; // indeks kategori yang sedang diedit di modal Kelola Kategori (-1 = tidak ada)
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 export function renderKatalogPage(stateData) {
   if (stateData) {
@@ -19,6 +22,7 @@ export function renderKatalogPage(stateData) {
   renderMasterTable();
   setupTableEventListeners();
   populateTransactionProductSelect();
+  if (editingCatIndex === -1) renderCategoryList(); // jangan ganggu input yang sedang diketik
 }
 
 // ==================== FILTER & TABLE LOGIC ====================
@@ -160,18 +164,22 @@ function setupTableEventListeners() {
 
 function renderCategoryDropdowns() {
   const categories = appState?.categories || [];
+  const options = categories.map(cat => `<option value="${esc(cat)}">${esc(cat)}</option>`).join('');
+
+  // Filter: pertahankan pilihan saat ini kalau kategorinya masih ada
   const filterSelect = document.getElementById('categoryFilter');
   if (filterSelect) {
-    let filterHtml = '<option value="ALL">Semua Kategori</option>';
-    categories.forEach(cat => { filterHtml += `<option value="${cat}">${cat}</option>`; });
-    filterSelect.innerHTML = filterHtml;
+    const prev = filterSelect.value || 'ALL';
+    filterSelect.innerHTML = '<option value="ALL">Semua Kategori</option>' + options;
+    filterSelect.value = categories.includes(prev) ? prev : 'ALL';
   }
 
+  // Form produk: pertahankan pilihan saat ini kalau kategorinya masih ada
   const prodCatSelect = document.getElementById('prodCategory');
   if (prodCatSelect) {
-    let catFormHtml = '';
-    categories.forEach(cat => { catFormHtml += `<option value="${cat}">${cat}</option>`; });
-    prodCatSelect.innerHTML = catFormHtml;
+    const prev = prodCatSelect.value;
+    prodCatSelect.innerHTML = options;
+    if (categories.includes(prev)) prodCatSelect.value = prev;
   }
 }
 
@@ -231,6 +239,189 @@ window.openDeleteModal = function(docId) {
   if (document.getElementById('deleteDocId')) document.getElementById('deleteDocId').value = docId;
   window.setElText?.('deleteProductName', `"${item.name}" [${item.id}]`);
   window.openModal('deleteModal');
+};
+
+// ==================== KELOLA KATEGORI (TAMBAH / EDIT / HAPUS) ====================
+
+function getCategories() {
+  if (!appState.categories) appState.categories = [];
+  return appState.categories;
+}
+
+function countProductsIn(name) {
+  return (appState.products || []).filter(p => p.category === name).length;
+}
+
+function cleanCategoryName(v) {
+  return String(v || '').trim().replace(/\s+/g, ' ');
+}
+
+function isDuplicateCategory(name, exceptIndex = -1) {
+  const key = name.toLowerCase();
+  return getCategories().some((c, i) => i !== exceptIndex && c.toLowerCase() === key);
+}
+
+async function persistCategories() {
+  await saveState();            // categories dan products (kalau ada yang dipindah) tersimpan sekaligus
+  saveLocalStorageFallback();
+  renderKatalogPage(appState);
+  renderCategoryList();
+}
+
+function renderCategoryList() {
+  const box = document.getElementById('categoryList');
+  if (!box) return;
+
+  const cats = getCategories();
+  if (!cats.length) {
+    box.innerHTML = '<div class="px-4 py-6 text-center text-xs text-slate-400">Belum ada kategori</div>';
+    return;
+  }
+
+  box.innerHTML = cats.map((cat, i) => {
+    if (i === editingCatIndex) {
+      return `
+        <div class="flex items-center gap-2 px-3 py-2.5 bg-indigo-50/60">
+          <input id="editCategoryInput" type="text" maxlength="40" value="${esc(cat)}"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();saveEditCategory(${i})}else if(event.key==='Escape'){cancelEditCategory()}"
+            class="flex-1 min-w-0 px-3 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+          <button type="button" onclick="saveEditCategory(${i})" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-semibold hover:bg-indigo-700 transition">Simpan</button>
+          <button type="button" onclick="cancelEditCategory()" class="px-2.5 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-semibold hover:bg-slate-200 transition">Batal</button>
+        </div>`;
+    }
+    const n = countProductsIn(cat);
+    return `
+      <div class="flex items-center justify-between gap-2 px-4 py-2.5 hover:bg-slate-50 transition">
+        <div class="min-w-0 flex items-center gap-2">
+          <span class="truncate text-xs font-semibold text-slate-700">${esc(cat)}</span>
+          <span class="shrink-0 text-[10px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${n} produk</span>
+        </div>
+        <div class="shrink-0 flex items-center space-x-1">
+          <button type="button" onclick="startEditCategory(${i})" title="Edit" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button type="button" onclick="openDeleteCategory(${i})" title="Hapus" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (editingCatIndex >= 0) {
+    const el = document.getElementById('editCategoryInput');
+    el?.focus();
+    el?.select();
+  }
+}
+
+window.openCategoryModal = function () {
+  editingCatIndex = -1;
+  const input = document.getElementById('newCategoryName');
+  if (input) input.value = '';
+  renderCategoryList();
+  window.openModal('categoryModal');
+};
+
+window.handleAddCategory = async function (e) {
+  e.preventDefault();
+  const input = document.getElementById('newCategoryName');
+  const name = cleanCategoryName(input?.value);
+  if (!name) return;
+  if (isDuplicateCategory(name)) {
+    window.showToast?.(`Kategori "${name}" sudah ada`, 'error');
+    return;
+  }
+  getCategories().push(name);
+  if (input) input.value = '';
+  await persistCategories();
+  window.showToast?.(`Kategori "${name}" ditambahkan`, 'success');
+};
+
+window.startEditCategory = function (i) {
+  editingCatIndex = i;
+  renderCategoryList();
+};
+
+window.cancelEditCategory = function () {
+  editingCatIndex = -1;
+  renderCategoryList();
+};
+
+window.saveEditCategory = async function (i) {
+  const cats = getCategories();
+  const oldName = cats[i];
+  if (oldName === undefined) return;
+
+  const newName = cleanCategoryName(document.getElementById('editCategoryInput')?.value);
+  if (!newName) {
+    window.showToast?.('Nama kategori tidak boleh kosong', 'error');
+    return;
+  }
+  if (newName === oldName) {
+    editingCatIndex = -1;
+    renderCategoryList();
+    return;
+  }
+  if (isDuplicateCategory(newName, i)) {
+    window.showToast?.(`Kategori "${newName}" sudah ada`, 'error');
+    return;
+  }
+
+  // Ganti nama kategori sekaligus semua produk yang memakainya
+  cats[i] = newName;
+  let updated = 0;
+  (appState.products || []).forEach(p => {
+    if (p.category === oldName) { p.category = newName; updated++; }
+  });
+
+  editingCatIndex = -1;
+  await persistCategories();
+  window.showToast?.(`Kategori diubah menjadi "${newName}"` + (updated ? ` (${updated} produk ikut diperbarui)` : ''), 'success');
+};
+
+window.openDeleteCategory = function (i) {
+  const cats = getCategories();
+  const name = cats[i];
+  if (name === undefined) return;
+
+  if (cats.length <= 1) {
+    window.showToast?.('Minimal harus ada 1 kategori', 'error');
+    return;
+  }
+
+  const count = countProductsIn(name);
+  document.getElementById('deleteCategoryIndex').value = i;
+  document.getElementById('deleteCategoryName').innerText = `Kategori "${name}" akan dihapus.`;
+
+  const moveBox = document.getElementById('deleteCategoryMoveBox');
+  const select = document.getElementById('deleteCategoryMoveTo');
+  if (count > 0) {
+    document.getElementById('deleteCategoryCount').innerText = count;
+    select.innerHTML = cats.map((c, idx) => idx === i ? '' : `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    moveBox.classList.remove('hidden');
+  } else {
+    moveBox.classList.add('hidden');
+  }
+  window.openModal('categoryDeleteModal');
+};
+
+window.confirmDeleteCategory = async function () {
+  const i = parseInt(document.getElementById('deleteCategoryIndex')?.value, 10);
+  const cats = getCategories();
+  const name = cats[i];
+  if (name === undefined) return;
+
+  const count = countProductsIn(name);
+  if (count > 0) {
+    const target = document.getElementById('deleteCategoryMoveTo')?.value;
+    if (!target || target === name || !cats.includes(target)) {
+      window.showToast?.('Pilih kategori tujuan untuk produk yang dipindahkan', 'error');
+      return;
+    }
+    (appState.products || []).forEach(p => { if (p.category === name) p.category = target; });
+  }
+
+  cats.splice(i, 1);
+  editingCatIndex = -1;
+  await persistCategories();
+  window.closeModal('categoryDeleteModal');
+  window.showToast?.(`Kategori "${name}" dihapus`, 'success');
 };
 
 // ==================== FORM SUBMISSIONS & SAVING ====================
