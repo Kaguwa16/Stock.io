@@ -4,6 +4,7 @@ import { initRealtimeClock } from './utils.js';
 import { state, subscribeState, initCloudSync } from './state.js';
 import { renderDashboardPage } from './pages/dashboard.js';
 import { renderKatalogPage } from './pages/katalog.js';
+import { renderPenjualanPage } from './pages/penjualan.js';
 
 // 1. Inisialisasi Fitur Umum
 initRealtimeClock();
