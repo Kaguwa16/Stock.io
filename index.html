@@ -44,32 +44,41 @@
   </div>
 
   <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-        <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
-          <i class="fa-solid fa-chart-pie text-base w-5"></i>  
-          <span class="font-bold">Ringkasan Dasbor</span>
-        </a>
+  <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
+    <i class="fa-solid fa-chart-pie text-base w-5"></i>
+    <span class="font-bold">Ringkasan Dasbor</span>
+  </a>
 
-        <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-          <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
-          <span>Laporan & Keuangan</span>
-        </a>
+  <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+    <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
+    <span>Laporan & Keuangan</span>
+  </a>
 
-        <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-          <i class="fa-solid fa-boxes-packing text-base w-5"></i>
-          <span>Master Katalog Produk</span>
-        </a>
-  
-        <div class="pt-4 pb-2 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Aksi Cepat</div>
+  <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+    <i class="fa-solid fa-boxes-packing text-base w-5"></i>
+    <span>Master Katalog Produk</span>
+  </a>
 
-        <button onclick="openModal('transactionModal')" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white font-medium text-sm transition">
-          <i class="fa-solid fa-right-left text-base w-5"></i>
-          <span>Catat Mutasi / Loss</span>
-        </button>
-        <button onclick="openModal('productModal')" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white font-medium text-sm transition">
-          <i class="fa-solid fa-plus text-base w-5"></i>
-          <span>Tambah Produk & HPP</span>
-        </button>
-      </nav>
+  <div>
+    <button id="penjualanToggle" type="button"
+      onclick="document.getElementById('penjualanSub').classList.toggle('hidden'); document.getElementById('penjualanChevron').classList.toggle('rotate-180')"
+      class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+      <span class="flex items-center space-x-3">
+        <i class="fa-solid fa-cart-shopping text-base w-5"></i>
+        <span>Penjualan</span>
+      </span>
+      <i id="penjualanChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
+    </button>
+    <div id="penjualanSub" class="hidden mt-1.5 ml-4 pl-4 border-l border-slate-700 space-y-1">
+      <a href="penjualan.html?tipe=online" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-globe w-4"></i><span>Penjualan Online</span>
+      </a>
+      <a href="penjualan.html?tipe=offline" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-store w-4"></i><span>Penjualan Offline</span>
+      </a>
+    </div>
+  </div>
+</nav>
 
       <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
         <i class="fa-solid fa-right-from-bracket text-base"></i>
