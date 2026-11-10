@@ -22,6 +22,7 @@ onAuthStateChanged(auth, (user) => {
 subscribeState((currentState) => {
   renderDashboardPage(currentState);
   renderKatalogPage(currentState);
+  renderPenjualanPage(currentState);
 });
 
 // 4. Expose Global Logout
