@@ -12,6 +12,8 @@ initRealtimeClock();
 // 2. Auth Guard
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    const idEl = document.getElementById('authUserIdDisplay');
+    if (idEl) idEl.innerText = user.email || user.uid;
     initCloudSync();
   } else {
     window.location.href = "login.html";
