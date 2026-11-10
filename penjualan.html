@@ -139,7 +139,7 @@
                 <option value="SUDAH">Sudah Dipacking</option>
               </select>
               <select id="monthFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-1.5"></select>
-              <button onclick="resetFilters()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-xs">Reset</button>
+              <button onclick="resetPenjualanFilters()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-xs">Reset</button>
             </div>
           </div>
  
@@ -166,9 +166,12 @@
             </table>
           </div>
  
-          <div class="p-4 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
-            <div id="tableInfoText">Menampilkan 0 data</div>
-            <div id="totalPcsText" class="font-semibold"></div>
+          <div class="p-4 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div>
+              <span id="tableInfoText">Menampilkan 0 data</span>
+              <span id="totalPcsText" class="ml-2 font-semibold"></span>
+            </div>
+            <div id="paginationControls" class="flex items-center space-x-1"></div>
           </div>
         </section>
       </main>
@@ -218,15 +221,17 @@
           <input type="text" id="saleHp" required placeholder="Contoh: Samsung A52" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
         </div>
  
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Resi</label>
-            <input type="text" id="saleResi" placeholder="Nomor resi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Persamaan HP</label>
-            <input type="text" id="salePersamaan" placeholder="Contoh: A52 = A72" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
-          </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Resi</label>
+          <input type="text" id="saleResi" placeholder="Nomor resi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div id="persamaanWrap" class="relative">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Persamaan HP (produk dari Katalog)</label>
+          <input type="text" id="salePersamaan" autocomplete="off" placeholder="Ketik untuk cari produk katalog..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+          <input type="hidden" id="salePersamaanId">
+          <div id="persamaanDropdown" class="hidden absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg divide-y divide-slate-100"></div>
+          <p id="persamaanInfo" class="text-[10px] text-slate-400 mt-1"></p>
         </div>
  
         <div class="grid grid-cols-2 gap-4">
