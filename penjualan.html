@@ -129,7 +129,7 @@
           <div class="p-6 border-b flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h3 id="tableTitle" class="font-bold text-slate-800 text-lg">Data Penjualan</h3>
-              <p class="text-xs text-slate-400">Data otomatis diarsipkan per bulan. Bulan baru dimulai dari daftar kosong, bulan lama tetap bisa dibuka di arsip.</p>
+              <p class="text-xs text-slate-400">Setiap data otomatis terhapus 1 bulan setelah tanggal penjualannya (contoh: tanggal 10 Nov dihapus 10 Des).</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
               <input type="text" id="searchInput" placeholder="Cari ID / tipe / resi..." class="pl-3 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
@@ -138,13 +138,8 @@
                 <option value="BELUM">Belum Dipacking</option>
                 <option value="SUDAH">Sudah Dipacking</option>
               </select>
-              <select id="monthFilter" class="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-1.5"></select>
               <button onclick="resetPenjualanFilters()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-xs">Reset</button>
             </div>
-          </div>
- 
-          <div id="archiveBanner" class="hidden px-6 py-2.5 bg-amber-50 border-b border-amber-100 text-xs text-amber-700">
-            <i class="fa-solid fa-box-archive mr-1.5"></i> Anda sedang melihat <b>arsip bulan lalu</b> (hanya baca).
           </div>
  
           <div class="overflow-x-auto">
