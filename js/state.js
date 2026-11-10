@@ -31,6 +31,7 @@ export function initCloudSync() {
   const storeRef = doc(db, 'artifacts', appId, 'dashboard_store', 'main_state');
 
   onSnapshot(storeRef, (snapshot) => {
+    setSyncStatus(true);
     if (snapshot.exists()) {
       const data = snapshot.data();
       state.products = data.products || [];
@@ -43,6 +44,7 @@ export function initCloudSync() {
     notifySubscribers();
   }, (err) => {
     console.warn("Firestore offline fallback:", err);
+    setSyncStatus(false);
     loadLocalStorageFallback();
   });
 }
