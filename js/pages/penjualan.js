@@ -38,20 +38,29 @@ function getItems(s) {
 }
 
 function itemsHtml(s) {
-  const items = getItems(s).filter(i => i.persamaan);
+  const items = getItems(s).filter(i => String(i.persamaan || '').trim());
   if (!items.length) return '<span class="text-slate-300">-</span>';
 
-  // Tampilkan satu nama persamaan untuk setiap pcs.
-  // Contoh: satu produk dengan qty 2 akan tampil dua kali, tanpa tulisan x2.
-  const namesPerPcs = [];
-  items.forEach(i => {
-    const qty = Math.max(1, parseInt(i.qty, 10) || 1);
-    for (let n = 0; n < qty; n++) namesPerPcs.push(i.persamaan);
+  // Satu persamaan ditampilkan satu kali untuk setiap tipe/produk yang berbeda,
+  // bukan diulang berdasarkan qty. Qty tetap dihitung pada kolom Jumlah (pcs).
+  // Jika produk yang sama terinput pada beberapa baris, gabungkan tampilannya.
+  const seen = new Set();
+  const persamaanUnik = [];
+
+  items.forEach(item => {
+    const name = String(item.persamaan || '').trim();
+    const key = item.productDocId
+      ? `product:${item.productDocId}`
+      : `name:${name.toLocaleLowerCase()}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      persamaanUnik.push(name);
+    }
   });
 
-  return namesPerPcs.map(name =>
-    `<div class="whitespace-nowrap">${esc(name)}</div>`
-  ).join('');
+  // Semua persamaan untuk satu ID ditampilkan sejajar dalam satu baris sel.
+  return `<span class="whitespace-nowrap">${persamaanUnik.map(esc).join(' <span class="text-slate-300 px-1">,</span> ')}</span>`;
 }
 
 // ==================== ENTRY POINT ====================
