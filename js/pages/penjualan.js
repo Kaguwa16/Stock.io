@@ -1,6 +1,5 @@
 import { state, saveState, saveLocalStorageFallback } from '../state.js';
 
-
 // ==================== STATE LEVEL MODUL ====================
 let appState = { sales: [], products: [] };
 let channel = 'offline';      // 'online' | 'offline' | 'status'
@@ -41,8 +40,17 @@ function getItems(s) {
 function itemsHtml(s) {
   const items = getItems(s).filter(i => i.persamaan);
   if (!items.length) return '<span class="text-slate-300">-</span>';
-  return items.map(i =>
-    `<div class="whitespace-nowrap">${esc(i.persamaan)} <span class="text-slate-400 font-semibold">x${i.qty}</span></div>`
+
+  // Tampilkan satu nama persamaan untuk setiap pcs.
+  // Contoh: satu produk dengan qty 2 akan tampil dua kali, tanpa tulisan x2.
+  const namesPerPcs = [];
+  items.forEach(i => {
+    const qty = Math.max(1, parseInt(i.qty, 10) || 1);
+    for (let n = 0; n < qty; n++) namesPerPcs.push(i.persamaan);
+  });
+
+  return namesPerPcs.map(name =>
+    `<div class="whitespace-nowrap">${esc(name)}</div>`
   ).join('');
 }
 
@@ -447,11 +455,15 @@ function selectPersamaan(row, docId) {
 
 // ==================== EVENT LISTENERS ====================
 function setupPenjualanEventListeners() {
+  // Simpan penanda listener per jenis event.
+  // Sebelumnya semua event memakai listenerAttached yang sama, sehingga setelah
+  // event input terpasang, focusin/mousedown/click pada elemen yang sama terlewat.
   const once = (el, evt, fn) => {
-    if (el && !el.dataset.listenerAttached) {
-      el.addEventListener(evt, fn);
-      el.dataset.listenerAttached = 'true';
-    }
+    if (!el) return;
+    const key = `listener${evt.replace(/[^a-z0-9]/gi, '')}`;
+    if (el.dataset[key] === 'true') return;
+    el.addEventListener(evt, fn);
+    el.dataset[key] = 'true';
   };
 
   once(byId('searchInput'), 'input', () => { currentPage = 1; renderSalesTable(); });
@@ -488,9 +500,10 @@ function setupPenjualanEventListeners() {
     renderItemDropdown(row, !!row.querySelector('.itemProductId').value);
   });
   once(container, 'keydown', (e) => { if (e.key === 'Escape') hideAllDropdowns(); });
-  once(container, 'mousedown', (e) => {
+  // Gunakan click agar pemilihan produk bekerja dengan mouse maupun perangkat sentuh.
+  once(container, 'click', (e) => {
     const btn = e.target.closest('.persamaanItem');
-    if (!btn) return;
+    if (!btn || !container.contains(btn)) return;
     e.preventDefault();
     if (btn.dataset.disabled) return;
     selectPersamaan(btn.closest('.itemRow'), btn.dataset.id);
