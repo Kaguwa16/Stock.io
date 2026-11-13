@@ -1,5 +1,6 @@
 import { state, saveState, saveLocalStorageFallback } from '../state.js';
 
+
 // ==================== STATE LEVEL MODUL ====================
 let appState = { sales: [], products: [] };
 let channel = 'offline';      // 'online' | 'offline' | 'status'
