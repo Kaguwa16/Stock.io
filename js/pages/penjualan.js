@@ -26,8 +26,9 @@ function findProduct(docId) {
 // Data lama (persamaan/productDocId tunggal) otomatis dibaca sebagai 1 item.
 function getItems(s) {
   if (Array.isArray(s.items)) return s.items;
-  if (s.persamaan || s.productDocId) {
+  if (s.persamaan || s.productDocId || s.hp) {
     return [{
+      hp: s.hp || '',
       productDocId: s.productDocId || '',
       persamaan: s.persamaan || '',
       qty: s.qty || 0,
@@ -37,30 +38,28 @@ function getItems(s) {
   return [];
 }
 
+// Satu penjualan (satu ID) boleh memiliki beberapa pasangan tipe HP dan persamaan.
+// Setiap pasangan dirender sebagai baris kecil yang sejajar di dua kolom tabel.
+function getItemLines(s) {
+  return getItems(s).filter(item =>
+    String(item.hp || s.hp || '').trim() || String(item.persamaan || '').trim()
+  );
+}
+
+function buyerHpHtml(s) {
+  const lines = getItemLines(s);
+  if (!lines.length) return '<span class="text-slate-300">-</span>';
+  return lines.map(item =>
+    `<div class="whitespace-nowrap">${esc(item.hp || s.hp || '-')}</div>`
+  ).join('');
+}
+
 function itemsHtml(s) {
-  const items = getItems(s).filter(i => String(i.persamaan || '').trim());
-  if (!items.length) return '<span class="text-slate-300">-</span>';
-
-  // Satu persamaan ditampilkan satu kali untuk setiap tipe/produk yang berbeda,
-  // bukan diulang berdasarkan qty. Qty tetap dihitung pada kolom Jumlah (pcs).
-  // Jika produk yang sama terinput pada beberapa baris, gabungkan tampilannya.
-  const seen = new Set();
-  const persamaanUnik = [];
-
-  items.forEach(item => {
-    const name = String(item.persamaan || '').trim();
-    const key = item.productDocId
-      ? `product:${item.productDocId}`
-      : `name:${name.toLocaleLowerCase()}`;
-
-    if (!seen.has(key)) {
-      seen.add(key);
-      persamaanUnik.push(name);
-    }
-  });
-
-  // Semua persamaan untuk satu ID ditampilkan sejajar dalam satu baris sel.
-  return `<span class="whitespace-nowrap">${persamaanUnik.map(esc).join(' <span class="text-slate-300 px-1">,</span> ')}</span>`;
+  const lines = getItemLines(s).filter(item => String(item.persamaan || '').trim());
+  if (!lines.length) return '<span class="text-slate-300">-</span>';
+  return lines.map(item =>
+    `<div class="whitespace-nowrap">${esc(item.persamaan)} <span class="text-slate-400 font-semibold">x${Math.max(1, Number(item.qty) || 1)}</span></div>`
+  ).join('');
 }
 
 // ==================== ENTRY POINT ====================
@@ -180,7 +179,7 @@ function renderSalesTable() {
   if (q) {
     rows = rows.filter(s => [
       s.kode, s.marketplace, s.hp, s.resi, s.persamaan,
-      getItems(s).map(i => i.persamaan).join(' ')
+      getItems(s).map(i => `${i.hp || ''} ${i.persamaan || ''}`).join(' ')
     ].join(' ').toLowerCase().includes(q));
   }
   rows = [...rows].sort((a, b) => ((b.tanggal || '') + (b.createdAt || '')).localeCompare((a.tanggal || '') + (a.createdAt || '')));
@@ -193,6 +192,7 @@ function renderSalesTable() {
           <th class="py-3.5 px-4">Tanggal</th>
           <th class="py-3.5 px-4">ID</th>
           <th class="py-3.5 px-4">Marketplace</th>
+          <th class="py-3.5 px-4">Tipe HP Pembeli</th>
           <th class="py-3.5 px-4">Persamaan HP</th>
           <th class="py-3.5 px-4 text-right">Jumlah (pcs)</th>
           <th class="py-3.5 px-4 text-center">Status</th>
@@ -227,7 +227,7 @@ function renderSalesTable() {
 
   // Render Baris Data
   if (!pageItems.length) {
-    const colSpan = isStatusView ? 7 : 9;
+    const colSpan = isStatusView ? 8 : 9;
     const msg = isStatusView ? 'Belum ada penjualan online yang sudah dipacking' : 'Belum ada data';
     tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-8 text-slate-400"><p class="text-xs font-semibold">${msg}</p></td></tr>`;
   } else if (isStatusView) {
@@ -246,6 +246,7 @@ function renderSalesTable() {
           <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}<div class="text-[10px] text-slate-400">dihapus ${fmtDate(expiryDate(s.tanggal))}</div></td>
           <td class="py-3 px-4 font-semibold text-slate-800">${esc(s.kode)}</td>
           <td class="py-3 px-4">${esc(s.marketplace) || '<span class="text-slate-300">-</span>'}</td>
+          <td class="py-3 px-4">${buyerHpHtml(s)}</td>
           <td class="py-3 px-4">${itemsHtml(s)}</td>
           <td class="py-3 px-4 text-right font-semibold">${s.qty}</td>
           <td class="py-3 px-4 text-center">${statusBadge}</td>
@@ -265,7 +266,7 @@ function renderSalesTable() {
         <td class="py-3 px-4 whitespace-nowrap">${fmtDate(s.tanggal)}<div class="text-[10px] text-slate-400">dihapus ${fmtDate(expiryDate(s.tanggal))}</div></td>
         <td class="py-3 px-4 font-semibold text-slate-800">${esc(s.kode)}</td>
         <td class="py-3 px-4">${esc(s.marketplace) || '<span class="text-slate-300">-</span>'}</td>
-        <td class="py-3 px-4">${esc(s.hp)}</td>
+        <td class="py-3 px-4">${buyerHpHtml(s)}</td>
         <td class="py-3 px-4">${esc(s.resi) || '<span class="text-slate-300">-</span>'}</td>
         <td class="py-3 px-4">${itemsHtml(s)}</td>
         <td class="py-3 px-4 text-right font-semibold">${s.qty}</td>
@@ -334,15 +335,24 @@ function getAvailableStock(docId, editItem) {
 
 function itemRowHtml(item = {}) {
   const valid = item.productDocId && findProduct(item.productDocId) ? item.productDocId : '';
+  const defaultHp = item.hp || byId('saleHp')?.value?.trim() || '';
   return `
     <div class="itemRow relative border border-slate-200 rounded-xl p-3 bg-slate-50/60">
-      <div class="flex items-start gap-2">
-        <div class="flex-1 min-w-0">
+      <div class="grid grid-cols-1 sm:grid-cols-[minmax(110px,0.8fr)_minmax(180px,1.5fr)_76px_auto] gap-2 items-start">
+        <div class="min-w-0">
+          <label class="block text-[10px] font-semibold text-slate-500 mb-1">Tipe HP Pembeli</label>
+          <input type="text" value="${esc(defaultHp)}" placeholder="Contoh: A52" class="itemHp w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="min-w-0">
+          <label class="block text-[10px] font-semibold text-slate-500 mb-1">Persamaan HP</label>
           <input type="text" autocomplete="off" value="${esc(item.persamaan || '')}" placeholder="Ketik untuk cari produk katalog..." class="itemPersamaan w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
           <input type="hidden" class="itemProductId" value="${esc(valid)}">
         </div>
-        <input type="number" min="1" value="${item.qty || 1}" title="Jumlah (pcs)" class="itemQty w-20 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
-        <button type="button" onclick="removeItemRow(this)" title="Hapus produk" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
+        <div class="min-w-0">
+          <label class="block text-[10px] font-semibold text-slate-500 mb-1">Pcs</label>
+          <input type="number" min="1" value="${item.qty || 1}" title="Jumlah (pcs)" class="itemQty w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <button type="button" onclick="removeItemRow(this)" title="Hapus pasangan tipe HP" class="mt-5 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
       </div>
       <div class="itemDropdown hidden absolute z-20 left-3 right-3 mt-1 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg divide-y divide-slate-100"></div>
       <p class="itemInfo text-[10px] text-slate-400 mt-1.5"></p>
@@ -352,7 +362,7 @@ function itemRowHtml(item = {}) {
 window.addItemRow = function (item) {
   const box = byId('itemsContainer');
   if (!box) return;
-  box.insertAdjacentHTML('beforeend', itemRowHtml(item && item.persamaan !== undefined ? item : {}));
+  box.insertAdjacentHTML('beforeend', itemRowHtml(item && (item.persamaan !== undefined || item.hp !== undefined) ? item : {}));
   updateAllInfo();
 };
 
@@ -361,6 +371,7 @@ window.removeItemRow = function (btn) {
   const row = btn.closest('.itemRow');
   if (!box || !row) return;
   if (box.querySelectorAll('.itemRow').length <= 1) {
+    row.querySelector('.itemHp').value = '';
     row.querySelector('.itemPersamaan').value = '';
     row.querySelector('.itemProductId').value = '';
     row.querySelector('.itemQty').value = 1;
@@ -373,6 +384,7 @@ window.removeItemRow = function (btn) {
 function readRows() {
   return [...document.querySelectorAll('#itemsContainer .itemRow')].map(r => ({
     row: r,
+    hp: r.querySelector('.itemHp')?.value.trim() || '',
     text: r.querySelector('.itemPersamaan').value.trim(),
     productDocId: r.querySelector('.itemProductId').value,
     qty: Math.max(1, parseInt(r.querySelector('.itemQty').value, 10) || 1)
@@ -562,6 +574,14 @@ window.setDeliveryStatus = async function (docId, newStatus) {
 
 window.openSaleModal = function (docId) {
   byId('saleForm')?.reset();
+  // Tipe HP sekarang diisi per baris pasangan; field lama menjadi default opsional.
+  if (byId('saleHp')) {
+    byId('saleHp').required = false;
+    byId('saleHp').placeholder = 'Default tipe HP (opsional; bisa berbeda per baris)';
+    byId('saleHp').title = 'Boleh dikosongkan. Isi tipe HP masing-masing pada setiap baris pasangan di bawah.';
+    const hpLabel = document.querySelector('label[for="saleHp"]');
+    if (hpLabel) hpLabel.textContent = 'Tipe HP Default (opsional)';
+  }
   byId('editSaleId').value = '';
   byId('saleDate').value = todayStr();
   byId('saleChannel').value = channel === 'status' ? 'online' : channel;
@@ -590,7 +610,7 @@ window.openSaleModal = function (docId) {
   }
   if (!items.length) items = [{ persamaan: '', productDocId: '', qty: 1 }];
 
-  items.forEach(i => box.insertAdjacentHTML('beforeend', itemRowHtml(i)));
+  items.forEach(i => box.insertAdjacentHTML('beforeend', itemRowHtml({ ...i, hp: i.hp || byId('saleHp').value.trim() })));
   updateAllInfo();
   window.openModal('saleModal');
 };
@@ -612,7 +632,7 @@ window.handleSaleSubmit = async function (e) {
     channel: byId('saleChannel').value,
     kode: byId('saleCode').value.trim(),
     marketplace: byId('saleMarketplace').value.trim(),
-    hp: byId('saleHp').value.trim(),
+    hp: byId('saleHp')?.value.trim() || '',
     resi: byId('saleResi').value.trim(),
     packed: byId('salePacked').value === 'true'
   };
@@ -625,10 +645,14 @@ window.handleSaleSubmit = async function (e) {
   const prevItems = editItem ? getItems(editItem) : [];
   const rows = readRows();
 
-  // Validasi tiap baris: teks harus dipilih dari katalog (kecuali teks lama yang memang sudah ada)
+  // Setiap baris adalah pasangan: tipe HP pembeli + persamaan + jumlah pcs.
+  // Input saleHp lama tetap dipakai sebagai default untuk menjaga kompatibilitas data/form lama.
   const newItems = [];
   for (const r of rows) {
     const product = findProduct(r.productDocId);
+    const hasPairData = !!(r.hp || r.text || product);
+    if (!hasPairData) continue; // baris kosong diabaikan
+
     if (r.text && !product) {
       const legacy = prevItems.some(pi => pi.persamaan === r.text && !findProduct(pi.productDocId));
       if (!legacy) {
@@ -636,15 +660,27 @@ window.handleSaleSubmit = async function (e) {
         return;
       }
     }
-    if (!r.text && !product && rows.length > 1) continue; // baris kosong diabaikan
+
+    if (!r.text && !product) {
+      notify(`Pilih persamaan HP untuk tipe ${r.hp || data.hp || 'yang diinput'}.`, 'error');
+      return;
+    }
+
+    const buyerHp = r.hp || data.hp;
+    if (!buyerHp) {
+      notify('Isi Tipe HP Pembeli pada setiap pasangan sebelum menyimpan.', 'error');
+      return;
+    }
+
     newItems.push({
+      hp: buyerHp,
       productDocId: product ? product.docId : '',
       persamaan: product ? product.name : r.text,
       qty: r.qty,
       stockDeducted: product ? r.qty : 0
     });
   }
-  if (!newItems.length) newItems.push({ productDocId: '', persamaan: '', qty: 1, stockDeducted: 0 });
+  if (!newItems.length) newItems.push({ hp: data.hp, productDocId: '', persamaan: '', qty: 1, stockDeducted: 0 });
 
   // Cek stok per produk (gabungan semua baris dengan produk yang sama)
   const need = {};
@@ -669,6 +705,8 @@ window.handleSaleSubmit = async function (e) {
 
   data.items = newItems;
   data.qty = newItems.reduce((a, i) => a + i.qty, 0);
+  // Ringkasan kolom lama disimpan agar pencarian/data lama tetap kompatibel.
+  data.hp = [...new Set(newItems.map(i => i.hp).filter(Boolean))].join(', ');
   data.persamaan = newItems.map(i => i.persamaan).filter(Boolean).join(', ');
 
   if (editItem) {
