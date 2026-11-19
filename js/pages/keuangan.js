@@ -1,37 +1,29 @@
-// js/pages/keuangan.js
-import { db } from '../firebase-config.js';
-import {
-  collection,
-  doc,
-  addDoc,
-  deleteDoc,
-  writeBatch,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { state, saveState } from '../state.js';
 
-// Simpan state terakhir agar bisa diakses saat aksi Tutup Buku
-let latestState = {
-  products: [],
-  expenses: [],
-  monthlyArchives: [],
-  activePeriodName: 'November 2026'
-};
-
-// --- HELPER GLOBAL (Fallback jika belum tersedia di utils.js) ---
-const formatIDR = window.formatIDR || ((angka) =>
-  new Intl.NumberFormat('id-ID', {
+// --- HELPER GLOBAL (Menggunakan bawaan utils.js jika ada, atau fallback) ---
+const formatIDR = (angka) => {
+  if (typeof window.formatIDR === 'function') return window.formatIDR(angka);
+  return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0
-  }).format(Number(angka) || 0)
-);
+  }).format(Number(angka) || 0);
+};
 
-const setElText = window.setElText || ((id, text) => {
+const setElText = (id, text) => {
+  if (typeof window.setElText === 'function') {
+    window.setElText(id, text);
+    return;
+  }
   const el = document.getElementById(id);
   if (el) el.textContent = text;
-});
+};
 
-const showToast = window.showToast || ((message, type = 'success') => {
+const notify = (message, type = 'success') => {
+  if (typeof window.showToast === 'function') {
+    window.showToast(message, type);
+    return;
+  }
   const container = document.getElementById('toastContainer');
   if (!container) return;
 
@@ -44,9 +36,9 @@ const showToast = window.showToast || ((message, type = 'success') => {
 
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
-});
+};
 
-// --- MODAL HANDLERS GLOBAL (Untuk onclick di keuangan.html) ---
+// --- MODAL HANDLERS GLOBAL ---
 window.openModal = window.openModal || function (modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
@@ -104,23 +96,21 @@ function calculateFinanceSummary(products, expenses) {
   };
 }
 
-// --- FUNGSI UTAMA YANG DIPANGGIL OLEH main.js ---
-export function renderKeuanganPage(currentState = {}) {
-  // Guard Clause: hentikan eksekusi jika user sedang membuka halaman lain (misal index.html / katalog.html)
+// --- RENDER HALAMAN KEUANGAN (Dipanggil oleh main.js saat state berubah) ---
+export function renderKeuanganPage(currentState = state) {
+  // Guard Clause: hentikan jika bukan di halaman keuangan.html
   if (!document.getElementById('finValAsset')) return;
 
   const products = currentState.products || [];
   const expenses = currentState.expenses || [];
-  const monthlyArchives = currentState.monthlyArchives || currentState.archives || [];
-  const activePeriodName = currentState.activePeriodName || currentState.activePeriod || 'November 2026';
-
-  latestState = { products, expenses, monthlyArchives, activePeriodName };
+  const monthlyArchives = currentState.monthlyArchives || [];
+  const activePeriodName = currentState.activePeriodName || 'November 2026';
 
   setElText('activePeriodLabel', activePeriodName);
 
   const summary = calculateFinanceSummary(products, expenses);
 
-  // 1. Update 4 Kartu Ringkasan
+  // 1. Update 4 Kartu Ringkasan Utama
   setElText('finValAsset', formatIDR(summary.totalAssetValue));
   setElText('finValTurnover', formatIDR(summary.totalTurnover));
   setElText('finValGrossProfit', formatIDR(summary.grossProfit));
@@ -131,7 +121,7 @@ export function renderKeuanganPage(currentState = {}) {
   setElText('finLossShippingNominal', formatIDR(summary.lossShipping));
   setElText('finTotalExpensesNominal', formatIDR(summary.totalExpenses));
 
-  // 3. Render Log Biaya Operasional
+  // 3. Render Log Biaya Operasional Bulan Ini
   const expContainer = document.getElementById('expenseListContainer');
   if (expContainer) {
     if (expenses.length === 0) {
@@ -139,22 +129,23 @@ export function renderKeuanganPage(currentState = {}) {
         '<div class="text-center py-6 text-slate-400 text-xs">Belum ada catatan biaya operasional bulan ini.</div>';
     } else {
       expContainer.innerHTML = expenses
-        .map(
-          (exp) => `
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
-            <div>
-              <span class="text-xs font-bold text-slate-800 block">${exp.name}</span>
-              <span class="text-[10px] text-slate-400">${exp.category || 'Operasional'} &bull; ${exp.date || '-'}</span>
+        .map((exp, idx) => {
+          const itemId = exp.id || exp.docId || String(idx);
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
+              <div>
+                <span class="text-xs font-bold text-slate-800 block">${exp.name}</span>
+                <span class="text-[10px] text-slate-400">${exp.category || 'Operasional'} &bull; ${exp.date || '-'}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-extrabold text-slate-700">${formatIDR(exp.amount)}</span>
+                <button onclick="deleteExpense('${itemId}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-xs font-extrabold text-slate-700">${formatIDR(exp.amount)}</span>
-              <button onclick="deleteExpense('${exp.docId || exp.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
-            </div>
-          </div>
-        `
-        )
+          `;
+        })
         .join('');
     }
   }
@@ -184,23 +175,23 @@ export function renderKeuanganPage(currentState = {}) {
   }
 }
 
-// --- AKSI CRUD: HAPUS BIAYA OPERASIONAL ---
-window.deleteExpense = async function (docId) {
-  if (!docId) return;
+// --- HAPUS BIAYA OPERASIONAL VIA STATE ---
+window.deleteExpense = async function (targetId) {
+  if (!targetId) return;
   if (!confirm('Hapus catatan biaya operasional ini?')) return;
 
-  try {
-    await deleteDoc(doc(db, 'expenses', docId));
-    showToast('Biaya operasional berhasil dihapus.');
-  } catch (err) {
-    console.error('Gagal menghapus biaya:', err);
-    showToast('Gagal menghapus biaya operasional.', 'error');
-  }
+  state.expenses = (state.expenses || []).filter(
+    (exp, idx) => String(exp.id || exp.docId || idx) !== String(targetId)
+  );
+
+  renderKeuanganPage(state);
+  await saveState();
+  notify('Biaya operasional berhasil dihapus.');
 };
 
-// --- EVENT DELEGATION UNTUK FORM MODAL (Aman dari duplikasi saat re-render) ---
+// --- SUBMIT FORM MODAL (BIAYA OPERASIONAL & TUTUP BUKU) ---
 document.addEventListener('submit', async (e) => {
-  // 1. Submit Tambah Biaya Operasional
+  // 1. Tambah Biaya Operasional
   if (e.target.id === 'expenseForm') {
     e.preventDefault();
     const name = document.getElementById('expName')?.value.trim();
@@ -209,79 +200,71 @@ document.addEventListener('submit', async (e) => {
     const date = document.getElementById('expDate')?.value || new Date().toISOString().split('T')[0];
 
     if (!name || amount <= 0) {
-      showToast('Nama biaya dan nominal harus diisi dengan benar.', 'error');
+      notify('Nama biaya dan nominal harus diisi dengan benar.', 'error');
       return;
     }
 
-    try {
-      await addDoc(collection(db, 'expenses'), {
+    const newId = Date.now().toString();
+    state.expenses = [
+      {
+        id: newId,
+        docId: newId,
         name,
         category,
         amount,
-        date,
-        createdAt: serverTimestamp()
-      });
-      e.target.reset();
-      window.closeModal('expenseModal');
-      showToast('Biaya operasional berhasil disimpan.');
-    } catch (err) {
-      console.error('Gagal menyimpan biaya:', err);
-      showToast('Gagal menyimpan biaya operasional.', 'error');
-    }
+        date
+      },
+      ...(state.expenses || [])
+    ];
+
+    e.target.reset();
+    window.closeModal('expenseModal');
+    renderKeuanganPage(state);
+    await saveState();
+    notify('Biaya operasional berhasil disimpan.');
   }
 
-  // 2. Submit Tutup Buku Bulanan
+  // 2. Tutup Buku Bulanan
   if (e.target.id === 'closeMonthForm') {
     e.preventDefault();
     const nextPeriodInput = document.getElementById('nextPeriodName')?.value.trim();
     if (!nextPeriodInput) {
-      showToast('Masukkan nama periode bulan berikutnya.', 'error');
+      notify('Masukkan nama periode bulan berikutnya.', 'error');
       return;
     }
 
-    const { products, expenses, activePeriodName } = latestState;
-    const summary = calculateFinanceSummary(products, expenses);
+    const summary = calculateFinanceSummary(state.products || [], state.expenses || []);
 
-    try {
-      await addDoc(collection(db, 'monthlyArchives'), {
-        period: activePeriodName,
+    // Tambahkan rekap bulan ini ke arsip
+    state.monthlyArchives = [
+      {
+        period: state.activePeriodName || 'November 2026',
         turnover: summary.totalTurnover,
         grossProfit: summary.grossProfit,
         totalLoss: summary.totalLoss,
         expenses: summary.totalExpenses,
         netProfit: summary.netProfit,
-        archivedAt: serverTimestamp()
-      });
+        archivedAt: new Date().toISOString()
+      },
+      ...(state.monthlyArchives || [])
+    ];
 
-      const batch = writeBatch(db);
+    // Reset counter bulanan pada semua produk
+    state.products = (state.products || []).map((p) => ({
+      ...p,
+      outgoing: 0,
+      supplierDamaged: 0,
+      shippingDamaged: 0
+    }));
 
-      products.forEach((p) => {
-        const id = p.docId || p.id;
-        if (id) {
-          batch.update(doc(db, 'products', id), {
-            outgoing: 0,
-            supplierDamaged: 0,
-            shippingDamaged: 0
-          });
-        }
-      });
+    // Kosongkan log biaya operasional bulan berjalan & perbarui nama periode
+    state.expenses = [];
+    state.activePeriodName = nextPeriodInput;
 
-      expenses.forEach((exp) => {
-        const id = exp.docId || exp.id;
-        if (id) {
-          batch.delete(doc(db, 'expenses', id));
-        }
-      });
-
-      batch.set(doc(db, 'settings', 'financePeriod'), { activePeriod: nextPeriodInput }, { merge: true });
-
-      await batch.commit();
-      e.target.reset();
-      window.closeModal('closeMonthModal');
-      showToast(`Tutup buku ${activePeriodName} selesai!`);
-    } catch (err) {
-      console.error('Gagal tutup buku:', err);
-      showToast('Terjadi kesalahan saat proses tutup buku.', 'error');
-    }
+    e.target.reset();
+    window.closeModal('closeMonthModal');
+    renderKeuanganPage(state);
+    await saveState();
+    notify(`Tutup buku selesai! Periode aktif sekarang: ${nextPeriodInput}`);
   }
 });
