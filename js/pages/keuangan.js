@@ -9,12 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-// Sesuaikan path import ini dengan file konfigurasi Firebase Anda (misal: ./firebase-config.js atau ./main.js)
-import { db, auth } from "./firebase-config.js";
-
+} 
 // --- STATE LOKAL ---
 let products = [];
 let expenses = [];
