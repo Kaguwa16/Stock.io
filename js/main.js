@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { initRealtimeClock } from './utils.js';
 import { state, subscribeState, initCloudSync } from './state.js';
 import { renderDashboardPage } from './pages/dashboard.js';
+import { renderDashboardPage } from './pages/keuangan.js';
 import { renderKatalogPage } from './pages/katalog.js';
 import { renderPenjualanPage } from './pages/penjualan.js';
 
@@ -23,6 +24,7 @@ onAuthStateChanged(auth, (user) => {
 // 3. Re-render UI otomatis saat Data State berubah
 subscribeState((currentState) => {
   renderDashboardPage(currentState);
+  renderKeuanganPage(currentState);
   renderKatalogPage(currentState);
   renderPenjualanPage(currentState);
 });
