@@ -185,25 +185,75 @@
       </main>
     </div>
   </div>
-
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-  <!-- Inisialisasi Global Cepat agar onclick di HTML langsung terbaca -->
-<script>
-  window.switchView = function(viewName) {
-    console.log("Switching to view:", viewName);
-    const views = document.querySelectorAll('.view-section');
-    views.forEach(el => el.classList.add('hidden'));
+<!-- Modal Tambah Biaya Operasional -->
+<div id="expenseModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+    <div class="flex items-center justify-between border-b pb-3 mb-4">
+      <h3 class="font-bold text-slate-800 text-base">Catat Biaya Operasional</h3>
+      <button type="button" onclick="closeModal('expenseModal')" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <form id="expenseForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Pengeluaran</label>
+        <input type="text" id="expName" required placeholder="Contoh: Lakban & Bubble Wrap" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+          <select id="expCategory" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+            <option value="Packing">Packing</option>
+            <option value="Listrik & Internet">Listrik & Internet</option>
+            <option value="Gaji / Admin">Gaji / Admin</option>
+            <option value="Iklan / Ads">Iklan / Ads</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
+          <input type="date" id="expDate" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Nominal (Rp)</label>
+        <input type="number" id="expAmount" required min="1" placeholder="50000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button type="button" onclick="closeModal('expenseModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
+        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white">Simpan Biaya</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    const targetView = document.getElementById(viewName);
-    if (targetView) {
-      targetView.classList.remove('hidden');
-    } else {
-      console.warn(`View dengan ID "${viewName}" tidak ditemukan.`);
-    }
-  };
-</script>
-
+<!-- Modal Konfirmasi Tutup Buku -->
+<div id="closeMonthModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+    <div class="flex items-center justify-between border-b pb-3 mb-4">
+      <h3 class="font-bold text-rose-600 text-base"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Tutup Buku Bulanan</h3>
+      <button type="button" onclick="closeModal('closeMonthModal')" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <form id="closeMonthForm" class="space-y-4">
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Tindakan ini akan mengarsipkan laporan keuangan bulan ini, menghapus daftar biaya operasional berjalan, dan mereset hitungan barang keluar/pecah menjadi <strong>0</strong>.
+      </p>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Periode Bulan Berikutnya</label>
+        <input type="text" id="nextPeriodName" required placeholder="Contoh: Desember 2026" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-500">
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button type="button" onclick="closeModal('closeMonthModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
+        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white">Arsipkan & Tutup Buku</button>
+      </div>
+    </form>
+  </div>
+</div>
+  
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
