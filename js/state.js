@@ -5,6 +5,7 @@ export const state = {
   products: [],
   categories: ["Tempered Glass", "Hydrogel", "Casing", "Kabel & Charger", "Aksesoris"],
   expenses: [],
+  incomes: [],
   sales: [],
   monthlyArchives: [],
   activePeriodName: "November 2026",
@@ -37,6 +38,7 @@ export function initCloudSync() {
       state.products = data.products || [];
       state.categories = data.categories || state.categories;
       state.expenses = data.expenses || [];
+      state.incomes = data.incomes || [];
       state.sales = data.sales || [];
       state.monthlyArchives = data.monthlyArchives || [];
       state.activePeriodName = data.activePeriodName || "November 2026";
@@ -61,6 +63,7 @@ export async function saveState() {
       products: state.products,
       categories: state.categories,
       expenses: state.expenses,
+      incomes: state.incomes,
       sales: state.sales,
       monthlyArchives: state.monthlyArchives,
       activePeriodName: state.activePeriodName,
