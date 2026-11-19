@@ -24,57 +24,56 @@
       <div class="h-16 flex items-center justify-between px-6 bg-slate-950 border-b border-slate-800">
         <div class="flex items-center space-x-3">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-white tracking-wide text-base leading-tight">Stock & Finance</h1>
+            <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Realtime</span>
+          </div>
         </div>
-        <div>
-          <h1 class="font-bold text-white tracking-wide text-base leading-tight">Stock & Finance</h1>
-          <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Realtime</span>
-        </div>
+        <button id="closeSidebarMobile" class="lg:hidden text-slate-400 hover:text-white p-2">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
       </div>
-      <!-- Tombol Close (X) di dalam Sidebar HP -->
-      <button id="closeSidebarMobile" class="lg:hidden text-slate-400 hover:text-white p-2">
-        <i class="fa-solid fa-xmark text-xl"></i>
-      </button>
-    </div>
 
- <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-  <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-    <i class="fa-solid fa-chart-pie text-base w-5"></i>
-    <span>Ringkasan Dasbor</span>
-  </a>
+      <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <a href="index.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-chart-pie text-base w-5"></i>
+          <span>Ringkasan Dasbor</span>
+        </a>
 
-  <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
-    <i class="fa-solid fa-wallet text-base w-5"></i>
-    <span class="font-bold">Laporan & Keuangan</span>
-  </a>
+        <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium text-sm transition">
+          <i class="fa-solid fa-wallet text-base w-5"></i>
+          <span class="font-bold">Laporan & Keuangan</span>
+        </a>
 
-  <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-    <i class="fa-solid fa-boxes-packing text-base w-5"></i>
-    <span>Master Katalog Produk</span>
-  </a>
+        <a href="katalog.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+          <i class="fa-solid fa-boxes-packing text-base w-5"></i>
+          <span>Master Katalog Produk</span>
+        </a>
 
-  <div>
-    <button id="penjualanToggle" type="button"
-      onclick="document.getElementById('penjualanSub').classList.toggle('hidden'); document.getElementById('penjualanChevron').classList.toggle('rotate-180')"
-      class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-      <span class="flex items-center space-x-3">
-        <i class="fa-solid fa-cart-shopping text-base w-5"></i>
-        <span>Penjualan</span>
-      </span>
-      <i id="penjualanChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
-    </button>
-    <div id="penjualanSub" class="hidden mt-1.5 ml-4 pl-4 border-l border-slate-700 space-y-1">
-      <a href="penjualan.html?tipe=online" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
-        <i class="fa-solid fa-globe w-4"></i><span>Penjualan Online</span>
-      </a>
-      <a href="penjualan.html?tipe=offline" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
-        <i class="fa-solid fa-store w-4"></i><span>Penjualan Offline</span>
-      </a>
-    </div>
-  </div>
-</nav>
+        <div>
+          <button id="penjualanToggle" type="button"
+            onclick="document.getElementById('penjualanSub').classList.toggle('hidden'); document.getElementById('penjualanChevron').classList.toggle('rotate-180')"
+            class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+            <span class="flex items-center space-x-3">
+              <i class="fa-solid fa-cart-shopping text-base w-5"></i>
+              <span>Penjualan</span>
+            </span>
+            <i id="penjualanChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
+          </button>
+          <div id="penjualanSub" class="hidden mt-1.5 ml-4 pl-4 border-l border-slate-700 space-y-1">
+            <a href="penjualan.html?tipe=online" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
+              <i class="fa-solid fa-globe w-4"></i><span>Penjualan Online</span>
+            </a>
+            <a href="penjualan.html?tipe=offline" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
+              <i class="fa-solid fa-store w-4"></i><span>Penjualan Offline</span>
+            </a>
+          </div>
+        </div>
+      </nav>
 
-       <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
+      <button id="logoutBtn" class="m-4 flex items-center justify-center space-x-3 px-4 py-2.5 rounded-xl bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white font-medium text-sm transition">
         <i class="fa-solid fa-right-from-bracket text-base"></i>
         <span>Keluar (Logout)</span>
       </button>
@@ -97,8 +96,8 @@
     <div class="flex-1 flex flex-col overflow-y-auto">
       <header class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
         <button id="openSidebarMobile" class="lg:hidden text-slate-600 hover:text-slate-900 focus:outline-none">
-            <i class="fa-solid fa-bars text-xl"></i>
-          </button>
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
         <p class="text-sm font-bold text-slate-700">Laporan Keuangan & Tutup Buku Bulanan</p>
       </header>
 
@@ -109,11 +108,14 @@
             <span id="activePeriodLabel" class="text-white font-bold underline">November 2026</span>
             <h2 class="text-2xl font-bold tracking-tight mt-1">Laporan Keuangan, Operasional & Retur Pecah</h2>
           </div>
-          <div class="flex items-center space-x-3">
-            <button onclick="openModal('expenseModal')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="openModal('incomeModal')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
+              <i class="fa-solid fa-plus mr-1"></i> Pendapatan
+            </button>
+            <button onclick="openModal('expenseModal')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
               <i class="fa-solid fa-plus mr-1"></i> Biaya Operasional
             </button>
-            <button onclick="openModal('closeMonthModal')" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">
+            <button onclick="openModal('closeMonthModal')" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm">
               <i class="fa-solid fa-calendar-check mr-1"></i> Tutup Buku
             </button>
           </div>
@@ -139,27 +141,44 @@
           </div>
         </section>
 
-        <!-- Breakdown & Expense Log -->
+        <!-- Breakdown & Log Pendapatan / Biaya -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-3">Rincian Kerugian Pecah</h3>
-            <div class="flex justify-between p-3 rounded-xl bg-rose-50 border border-rose-100">
+          <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3.5">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-3">Rincian Arus & Kerugian Pecah</h3>
+            <div class="flex justify-between items-center p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+              <span class="text-xs font-bold text-indigo-800">Total Pendapatan Lain</span>
+              <span id="finTotalIncomeNominal" class="text-sm font-extrabold text-indigo-600">Rp 0</span>
+            </div>
+            <div class="flex justify-between items-center p-3 rounded-xl bg-rose-50 border border-rose-100">
               <span class="text-xs font-bold text-rose-800">Pecah Supplier (HPP)</span>
               <span id="finLossSupplierNominal" class="text-sm font-extrabold text-rose-600">Rp 0</span>
             </div>
-            <div class="flex justify-between p-3 rounded-xl bg-purple-50 border border-purple-100">
+            <div class="flex justify-between items-center p-3 rounded-xl bg-purple-50 border border-purple-100">
               <span class="text-xs font-bold text-purple-800">Retur Transit Pembeli</span>
               <span id="finLossShippingNominal" class="text-sm font-extrabold text-purple-600">Rp 0</span>
             </div>
-            <div class="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs font-bold text-slate-800">Total Biaya Operasional</span>
               <span id="finTotalExpensesNominal" class="text-sm font-extrabold text-slate-800">Rp 0</span>
             </div>
           </div>
 
-          <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-3 mb-4">Log Biaya Operasional Bulan Ini</h3>
-            <div id="expenseListContainer" class="space-y-2 max-h-56 overflow-y-auto"></div>
+          <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+            <!-- Log Pendapatan Lainnya -->
+            <div>
+              <h3 class="font-bold text-indigo-700 text-xs uppercase tracking-wider border-b pb-2.5 mb-3 flex items-center justify-between">
+                <span><i class="fa-solid fa-arrow-trend-up mr-1.5"></i> Log Pendapatan Lain Bulan Ini</span>
+              </h3>
+              <div id="incomeListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
+            </div>
+
+            <!-- Log Biaya Operasional -->
+            <div>
+              <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider border-b pb-2.5 mb-3 flex items-center justify-between">
+                <span><i class="fa-solid fa-receipt mr-1.5"></i> Log Biaya Operasional Bulan Ini</span>
+              </h3>
+              <div id="expenseListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
+            </div>
           </div>
         </div>
 
@@ -176,6 +195,7 @@
                   <th class="py-3.5 px-4 text-right">Rugi Pecah</th>
                   <th class="py-3.5 px-4 text-right">Biaya</th>
                   <th class="py-3.5 px-4 text-right">Laba Bersih</th>
+                  <th class="py-3.5 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody id="archiveTableBody" class="divide-y text-slate-700"></tbody>
@@ -185,74 +205,105 @@
       </main>
     </div>
   </div>
+
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-<!-- Modal Tambah Biaya Operasional -->
-<div id="expenseModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-    <div class="flex items-center justify-between border-b pb-3 mb-4">
-      <h3 class="font-bold text-slate-800 text-base">Catat Biaya Operasional</h3>
-      <button type="button" onclick="closeModal('expenseModal')" class="text-slate-400 hover:text-slate-600">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-    </div>
-    <form id="expenseForm" class="space-y-4">
-      <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Pengeluaran</label>
-        <input type="text" id="expName" required placeholder="Contoh: Lakban & Bubble Wrap" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+  <!-- Modal Tambah Pendapatan -->
+  <div id="incomeModal" onclick="if(event.target === this) closeModal('incomeModal')" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl mx-auto my-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="font-bold text-indigo-700 text-base"><i class="fa-solid fa-circle-plus mr-1.5"></i> Catat Pendapatan Lain</h3>
+        <button type="button" onclick="closeModal('incomeModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
       </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
-          <select id="expCategory" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
-            <option value="Packing">Packing</option>
-            <option value="Listrik & Internet">Listrik & Internet</option>
-            <option value="Gaji / Admin">Gaji / Admin</option>
-            <option value="Iklan / Ads">Iklan / Ads</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-        </div>
+      <form id="incomeForm" class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
-          <input type="date" id="expDate" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+          <input type="date" id="incDate" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500">
         </div>
-      </div>
-      <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">Nominal (Rp)</label>
-        <input type="number" id="expAmount" required min="1" placeholder="50000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
-      </div>
-      <div class="flex justify-end space-x-2 pt-2">
-        <button type="button" onclick="closeModal('expenseModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
-        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white">Simpan Biaya</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal Konfirmasi Tutup Buku -->
-<div id="closeMonthModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-    <div class="flex items-center justify-between border-b pb-3 mb-4">
-      <h3 class="font-bold text-rose-600 text-base"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Tutup Buku Bulanan</h3>
-      <button type="button" onclick="closeModal('closeMonthModal')" class="text-slate-400 hover:text-slate-600">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nilai Pendapatan (Rp)</label>
+          <input type="number" id="incAmount" required min="1" placeholder="150000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan (Sumber Pendapatan)</label>
+          <input type="text" id="incSource" required placeholder="Contoh: Cashback Marketplace / Bonus Supplier" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeModal('incomeModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white">Simpan Pendapatan</button>
+        </div>
+      </form>
     </div>
-    <form id="closeMonthForm" class="space-y-4">
-      <p class="text-xs text-slate-600 leading-relaxed">
-        Tindakan ini akan mengarsipkan laporan keuangan bulan ini, menghapus daftar biaya operasional berjalan, dan mereset hitungan barang keluar/pecah menjadi <strong>0</strong>.
-      </p>
-      <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Periode Bulan Berikutnya</label>
-        <input type="text" id="nextPeriodName" required placeholder="Contoh: Desember 2026" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-500">
-      </div>
-      <div class="flex justify-end space-x-2 pt-2">
-        <button type="button" onclick="closeModal('closeMonthModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
-        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white">Arsipkan & Tutup Buku</button>
-      </div>
-    </form>
   </div>
-</div>
+
+  <!-- Modal Tambah Biaya Operasional -->
+  <div id="expenseModal" onclick="if(event.target === this) closeModal('expenseModal')" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl mx-auto my-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="font-bold text-slate-800 text-base">Catat Biaya Operasional</h3>
+        <button type="button" onclick="closeModal('expenseModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="expenseForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nama Pengeluaran</label>
+          <input type="text" id="expName" required placeholder="Contoh: Lakban & Bubble Wrap" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+            <select id="expCategory" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="Packing">Packing</option>
+              <option value="Listrik & Internet">Listrik & Internet</option>
+              <option value="Gaji / Admin">Gaji / Admin</option>
+              <option value="Iklan / Ads">Iklan / Ads</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
+            <input type="date" id="expDate" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nominal (Rp)</label>
+          <input type="number" id="expAmount" required min="1" placeholder="50000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeModal('expenseModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white">Simpan Biaya</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Tutup Buku -->
+  <div id="closeMonthModal" onclick="if(event.target === this) closeModal('closeMonthModal')" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl mx-auto my-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="font-bold text-rose-600 text-base"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Tutup Buku Bulanan</h3>
+        <button type="button" onclick="closeModal('closeMonthModal')" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form id="closeMonthForm" class="space-y-4">
+        <p class="text-xs text-slate-600 leading-relaxed">
+          Tindakan ini akan mengarsipkan laporan keuangan bulan ini, menghapus daftar pendapatan tambahan & biaya operasional berjalan, serta mereset hitungan barang keluar/pecah menjadi <strong>0</strong>.
+        </p>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nama Periode Bulan Berikutnya</label>
+          <input type="text" id="nextPeriodName" required placeholder="Contoh: Desember 2026" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-500">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeModal('closeMonthModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white">Arsipkan & Tutup Buku</button>
+        </div>
+      </form>
+    </div>
+  </div>
   
   <script type="module" src="js/main.js"></script>
 </body>
