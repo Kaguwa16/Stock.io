@@ -1,6 +1,6 @@
 import { state, saveState } from '../state.js';
 
-// --- HELPER GLOBAL (Menggunakan bawaan utils.js jika ada, atau fallback) ---
+// --- HELPER GLOBAL ---
 const formatIDR = (angka) => {
   if (typeof window.formatIDR === 'function') return window.formatIDR(angka);
   return new Intl.NumberFormat('id-ID', {
@@ -38,25 +38,39 @@ const notify = (message, type = 'success') => {
   setTimeout(() => toast.remove(), 3000);
 };
 
-// --- MODAL HANDLERS GLOBAL ---
-window.openModal = window.openModal || function (modalId) {
+// --- MODAL HANDLERS GLOBAL (Dipastikan selalu center di tengah layar) ---
+window.openModal = function (modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+  if (!modal) return;
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+
+  // Otomatis isi tanggal hari ini pada form pendapatan / biaya
+  const today = new Date().toISOString().split('T')[0];
+  if (modalId === 'incomeModal') {
+    const incDate = document.getElementById('incDate');
+    if (incDate && !incDate.value) incDate.value = today;
+  } else if (modalId === 'expenseModal') {
+    const expDate = document.getElementById('expDate');
+    if (expDate && !expDate.value) expDate.value = today;
   }
 };
 
-window.closeModal = window.closeModal || function (modalId) {
+window.closeModal = function (modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-  }
+  if (!modal) return;
+
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  modal.style.display = 'none';
 };
 
 // --- KALKULASI RINGKASAN KEUANGAN ---
-function calculateFinanceSummary(products, expenses) {
+function calculateFinanceSummary(products, expenses, incomes) {
   const totalAssetValue = products.reduce(
     (sum, p) => sum + (Number(p.stock || 0) * Number(p.hpp || 0)),
     0
@@ -71,6 +85,8 @@ function calculateFinanceSummary(products, expenses) {
   );
   const grossProfit = totalTurnover - totalCogsSales;
 
+  const totalOtherIncome = incomes.reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
+
   const lossSupplier = products.reduce(
     (sum, p) => sum + (Number(p.supplierDamaged || 0) * Number(p.hpp || 0)),
     0
@@ -82,12 +98,13 @@ function calculateFinanceSummary(products, expenses) {
   const totalLoss = lossSupplier + lossShipping;
 
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const netProfit = grossProfit - totalLoss - totalExpenses;
+  const netProfit = grossProfit + totalOtherIncome - totalLoss - totalExpenses;
 
   return {
     totalAssetValue,
     totalTurnover,
     grossProfit,
+    totalOtherIncome,
     lossSupplier,
     lossShipping,
     totalLoss,
@@ -96,19 +113,20 @@ function calculateFinanceSummary(products, expenses) {
   };
 }
 
-// --- RENDER HALAMAN KEUANGAN (Dipanggil oleh main.js saat state berubah) ---
+// --- RENDER HALAMAN KEUANGAN ---
 export function renderKeuanganPage(currentState = state) {
-  // Guard Clause: hentikan jika bukan di halaman keuangan.html
+  // Guard Clause: hentikan jika sedang di halaman lain
   if (!document.getElementById('finValAsset')) return;
 
   const products = currentState.products || [];
   const expenses = currentState.expenses || [];
+  const incomes = currentState.incomes || [];
   const monthlyArchives = currentState.monthlyArchives || [];
   const activePeriodName = currentState.activePeriodName || 'November 2026';
 
   setElText('activePeriodLabel', activePeriodName);
 
-  const summary = calculateFinanceSummary(products, expenses);
+  const summary = calculateFinanceSummary(products, expenses, incomes);
 
   // 1. Update 4 Kartu Ringkasan Utama
   setElText('finValAsset', formatIDR(summary.totalAssetValue));
@@ -116,17 +134,47 @@ export function renderKeuanganPage(currentState = state) {
   setElText('finValGrossProfit', formatIDR(summary.grossProfit));
   setElText('finValNetProfit', formatIDR(summary.netProfit));
 
-  // 2. Update Rincian Kerugian Pecah & Total Biaya
+  // 2. Update Rincian Arus & Kerugian Pecah
+  setElText('finTotalIncomeNominal', formatIDR(summary.totalOtherIncome));
   setElText('finLossSupplierNominal', formatIDR(summary.lossSupplier));
   setElText('finLossShippingNominal', formatIDR(summary.lossShipping));
   setElText('finTotalExpensesNominal', formatIDR(summary.totalExpenses));
 
-  // 3. Render Log Biaya Operasional Bulan Ini
+  // 3. Render Log Pendapatan Lain Bulan Ini
+  const incContainer = document.getElementById('incomeListContainer');
+  if (incContainer) {
+    if (incomes.length === 0) {
+      incContainer.innerHTML =
+        '<div class="text-center py-4 text-slate-400 text-xs">Belum ada catatan pendapatan lain bulan ini.</div>';
+    } else {
+      incContainer.innerHTML = incomes
+        .map((inc, idx) => {
+          const itemId = inc.id || inc.docId || String(idx);
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-100 hover:border-indigo-200 transition">
+              <div>
+                <span class="text-xs font-bold text-slate-800 block">${inc.source || inc.name}</span>
+                <span class="text-[10px] text-indigo-500 font-medium">${inc.date || '-'}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-extrabold text-indigo-700">+ ${formatIDR(inc.amount)}</span>
+                <button onclick="deleteIncome('${itemId}')" title="Hapus Pendapatan" class="text-slate-400 hover:text-rose-600 p-1 text-xs">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  // 4. Render Log Biaya Operasional Bulan Ini
   const expContainer = document.getElementById('expenseListContainer');
   if (expContainer) {
     if (expenses.length === 0) {
       expContainer.innerHTML =
-        '<div class="text-center py-6 text-slate-400 text-xs">Belum ada catatan biaya operasional bulan ini.</div>';
+        '<div class="text-center py-4 text-slate-400 text-xs">Belum ada catatan biaya operasional bulan ini.</div>';
     } else {
       expContainer.innerHTML = expenses
         .map((exp, idx) => {
@@ -139,7 +187,7 @@ export function renderKeuanganPage(currentState = state) {
               </div>
               <div class="flex items-center space-x-2">
                 <span class="text-xs font-extrabold text-slate-700">${formatIDR(exp.amount)}</span>
-                <button onclick="deleteExpense('${itemId}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs">
+                <button onclick="deleteExpense('${itemId}')" title="Hapus Biaya" class="text-slate-400 hover:text-rose-600 p-1 text-xs">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
@@ -150,32 +198,59 @@ export function renderKeuanganPage(currentState = state) {
     }
   }
 
-  // 4. Render Tabel Arsip Bulanan (6 Kolom sesuai thead di keuangan.html)
+  // 5. Render Tabel Arsip Bulanan (7 Kolom dengan Tombol Hapus)
   const archiveTbody = document.getElementById('archiveTableBody');
   if (archiveTbody) {
     if (monthlyArchives.length === 0) {
       archiveTbody.innerHTML =
-        '<tr><td colspan="6" class="text-center py-6 text-slate-400 text-xs">Belum ada arsip tutup buku periode sebelumnya.</td></tr>';
+        '<tr><td colspan="7" class="text-center py-6 text-slate-400 text-xs">Belum ada arsip tutup buku periode sebelumnya.</td></tr>';
     } else {
       archiveTbody.innerHTML = monthlyArchives
-        .map(
-          (arc) => `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-3.5 px-4 font-bold text-slate-800">${arc.period}</td>
-            <td class="py-3.5 px-4 text-right font-semibold text-emerald-600">${formatIDR(arc.turnover)}</td>
-            <td class="py-3.5 px-4 text-right font-semibold text-blue-600">${formatIDR(arc.grossProfit)}</td>
-            <td class="py-3.5 px-4 text-right font-semibold text-rose-600">${formatIDR(arc.totalLoss)}</td>
-            <td class="py-3.5 px-4 text-right font-semibold text-slate-600">${formatIDR(arc.expenses)}</td>
-            <td class="py-3.5 px-4 text-right font-extrabold text-purple-700">${formatIDR(arc.netProfit)}</td>
-          </tr>
-        `
-        )
+        .map((arc, idx) => {
+          const arcId = arc.id || arc.archivedAt || String(idx);
+          const extraIncomeBadge =
+            Number(arc.otherIncome || 0) > 0
+              ? `<span class="block text-[10px] text-indigo-500 font-medium">+ Lainnya: ${formatIDR(arc.otherIncome)}</span>`
+              : '';
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-3.5 px-4 font-bold text-slate-800">${arc.period}</td>
+              <td class="py-3.5 px-4 text-right font-semibold text-emerald-600">
+                ${formatIDR(arc.turnover)}
+                ${extraIncomeBadge}
+              </td>
+              <td class="py-3.5 px-4 text-right font-semibold text-blue-600">${formatIDR(arc.grossProfit)}</td>
+              <td class="py-3.5 px-4 text-right font-semibold text-rose-600">${formatIDR(arc.totalLoss)}</td>
+              <td class="py-3.5 px-4 text-right font-semibold text-slate-600">${formatIDR(arc.expenses)}</td>
+              <td class="py-3.5 px-4 text-right font-extrabold text-purple-700">${formatIDR(arc.netProfit)}</td>
+              <td class="py-3.5 px-4 text-center">
+                <button onclick="deleteArchive('${arcId}')" title="Hapus Arsip Periode Ini" class="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition text-xs">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        })
         .join('');
     }
   }
 }
 
-// --- HAPUS BIAYA OPERASIONAL VIA STATE ---
+// --- AKSI HAPUS PENDAPATAN ---
+window.deleteIncome = async function (targetId) {
+  if (!targetId) return;
+  if (!confirm('Hapus catatan pendapatan ini?')) return;
+
+  state.incomes = (state.incomes || []).filter(
+    (inc, idx) => String(inc.id || inc.docId || idx) !== String(targetId)
+  );
+
+  renderKeuanganPage(state);
+  await saveState();
+  notify('Catatan pendapatan berhasil dihapus.');
+};
+
+// --- AKSI HAPUS BIAYA OPERASIONAL ---
 window.deleteExpense = async function (targetId) {
   if (!targetId) return;
   if (!confirm('Hapus catatan biaya operasional ini?')) return;
@@ -189,9 +264,54 @@ window.deleteExpense = async function (targetId) {
   notify('Biaya operasional berhasil dihapus.');
 };
 
-// --- SUBMIT FORM MODAL (BIAYA OPERASIONAL & TUTUP BUKU) ---
+// --- AKSI HAPUS ARSIP BULANAN ---
+window.deleteArchive = async function (targetId) {
+  if (!targetId) return;
+  if (!confirm('Hapus data arsip rekap keuangan bulanan ini secara permanen?')) return;
+
+  state.monthlyArchives = (state.monthlyArchives || []).filter(
+    (arc, idx) => String(arc.id || arc.archivedAt || idx) !== String(targetId)
+  );
+
+  renderKeuanganPage(state);
+  await saveState();
+  notify('Arsip rekap bulanan berhasil dihapus.');
+};
+
+// --- SUBMIT FORM MODAL (PENDAPATAN, BIAYA OPERASIONAL, & TUTUP BUKU) ---
 document.addEventListener('submit', async (e) => {
-  // 1. Tambah Biaya Operasional
+  // 1. Tambah Pendapatan Lain
+  if (e.target.id === 'incomeForm') {
+    e.preventDefault();
+    const date = document.getElementById('incDate')?.value || new Date().toISOString().split('T')[0];
+    const amount = Number(document.getElementById('incAmount')?.value || 0);
+    const source = document.getElementById('incSource')?.value.trim();
+
+    if (!source || amount <= 0) {
+      notify('Keterangan sumber dan nilai pendapatan harus diisi dengan benar.', 'error');
+      return;
+    }
+
+    const newId = Date.now().toString();
+    state.incomes = [
+      {
+        id: newId,
+        docId: newId,
+        date,
+        amount,
+        source
+      },
+      ...(state.incomes || [])
+    ];
+
+    e.target.reset();
+    window.closeModal('incomeModal');
+    renderKeuanganPage(state);
+    await saveState();
+    notify('Pendapatan berhasil dicatat.');
+  }
+
+  // 2. Tambah Biaya Operasional
   if (e.target.id === 'expenseForm') {
     e.preventDefault();
     const name = document.getElementById('expName')?.value.trim();
@@ -224,7 +344,7 @@ document.addEventListener('submit', async (e) => {
     notify('Biaya operasional berhasil disimpan.');
   }
 
-  // 2. Tutup Buku Bulanan
+  // 3. Tutup Buku Bulanan
   if (e.target.id === 'closeMonthForm') {
     e.preventDefault();
     const nextPeriodInput = document.getElementById('nextPeriodName')?.value.trim();
@@ -233,13 +353,19 @@ document.addEventListener('submit', async (e) => {
       return;
     }
 
-    const summary = calculateFinanceSummary(state.products || [], state.expenses || []);
+    const summary = calculateFinanceSummary(
+      state.products || [],
+      state.expenses || [],
+      state.incomes || []
+    );
 
-    // Tambahkan rekap bulan ini ke arsip
+    const archiveId = Date.now().toString();
     state.monthlyArchives = [
       {
+        id: archiveId,
         period: state.activePeriodName || 'November 2026',
         turnover: summary.totalTurnover,
+        otherIncome: summary.totalOtherIncome,
         grossProfit: summary.grossProfit,
         totalLoss: summary.totalLoss,
         expenses: summary.totalExpenses,
@@ -257,8 +383,9 @@ document.addEventListener('submit', async (e) => {
       shippingDamaged: 0
     }));
 
-    // Kosongkan log biaya operasional bulan berjalan & perbarui nama periode
+    // Kosongkan log biaya operasional & pendapatan bulan berjalan, lalu perbarui periode
     state.expenses = [];
+    state.incomes = [];
     state.activePeriodName = nextPeriodInput;
 
     e.target.reset();
