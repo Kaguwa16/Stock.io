@@ -6,6 +6,7 @@ import { renderDashboardPage } from './pages/dashboard.js';
 import { renderKeuanganPage } from './pages/keuangan.js';
 import { renderKatalogPage } from './pages/katalog.js';
 import { renderPenjualanPage } from './pages/penjualan.js';
+import { renderCatatanPage } from './pages/catatan.js';
 
 // 1. Inisialisasi Fitur Umum
 initRealtimeClock();
@@ -27,6 +28,7 @@ subscribeState((currentState) => {
   renderKeuanganPage(currentState);
   renderKatalogPage(currentState);
   renderPenjualanPage(currentState);
+  renderCatatanPage(currentState);
 });
 
 // 4. Expose Global Logout
