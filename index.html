@@ -50,7 +50,7 @@
   </a>
 
   <a href="keuangan.html" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
-    <i class="fa-solid fa-wallet text-base w-5 text-emerald-400"></i>
+    <i class="fa-solid fa-wallet text-base w-5"></i>
     <span>Laporan & Keuangan</span>
   </a>
 
@@ -59,6 +59,7 @@
     <span>Master Katalog Produk</span>
   </a>
 
+  <!-- Submenu Penjualan -->
   <div>
     <button id="penjualanToggle" type="button"
       onclick="document.getElementById('penjualanSub').classList.toggle('hidden'); document.getElementById('penjualanChevron').classList.toggle('rotate-180')"
@@ -75,6 +76,24 @@
       </a>
       <a href="penjualan.html?tipe=offline" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
         <i class="fa-solid fa-store w-4"></i><span>Penjualan Offline</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Submenu Catatan -->
+  <div>
+    <button id="catatanToggle" type="button"
+      onclick="document.getElementById('catatanSub').classList.toggle('hidden'); document.getElementById('catatanChevron').classList.toggle('rotate-180')"
+      class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium text-sm transition">
+      <span class="flex items-center space-x-3">
+        <i class="fa-solid fa-note-sticky text-base w-5"></i>
+        <span>Memo & Tugas</span>
+      </span>
+      <i id="catatanChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform"></i>
+    </button>
+    <div id="catatanSub" class="hidden mt-1.5 ml-4 pl-4 border-l border-slate-700 space-y-1">
+      <a href="catatan.html" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-pen-to-square w-4"></i><span>Catatan</span>
       </a>
     </div>
   </div>
