@@ -1,4 +1,3 @@
-// js/pages/keuangan.js
 import { state, saveState } from '../state.js';
 
 // --- HELPER GLOBAL ---
@@ -39,7 +38,7 @@ const notify = (message, type = 'success') => {
   setTimeout(() => toast.remove(), 3000);
 };
 
-// --- MODAL HANDLERS GLOBAL (Dipastikan selalu center di tengah layar) ---
+// --- MODAL HANDLERS GLOBAL (Selalu center di tengah layar) ---
 window.openModal = function (modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
@@ -50,7 +49,6 @@ window.openModal = function (modalId) {
   modal.style.alignItems = 'center';
   modal.style.justifyContent = 'center';
 
-  // Otomatis isi tanggal hari ini pada form pendapatan / biaya
   const today = new Date().toISOString().split('T')[0];
   if (modalId === 'incomeModal') {
     const incDate = document.getElementById('incDate');
@@ -70,69 +68,115 @@ window.closeModal = function (modalId) {
   modal.style.display = 'none';
 };
 
+// --- DETEKSI & PENCOCOKAN PENJUALAN OFFLINE DENGAN KATALOG PRODUK ---
+function isOfflineSale(sale) {
+  const tipe = String(sale.tipe || sale.type || sale.channel || sale.jenis || '').toLowerCase().trim();
+  const marketplace = String(sale.marketplace || '').toLowerCase().trim();
+  return tipe === 'offline' || marketplace === 'toko langsung' || marketplace === 'offline';
+}
+
+function findCatalogProduct(products, item) {
+  const targetId = item.productId || item.idProduk || item.catalogId;
+  if (targetId) {
+    const byId = products.find(
+      (p) => String(p.id) === String(targetId) || String(p.docId) === String(targetId)
+    );
+    if (byId) return byId;
+  }
+
+  const rawName = String(
+    item.persamaanHp || item.productName || item.name || item.namaProduk || ''
+  ).trim().toLowerCase();
+
+  if (!rawName) return null;
+
+  return (
+    products.find((p) => String(p.name || '').trim().toLowerCase() === rawName) || null
+  );
+}
+
+function extractSaleItems(sale) {
+  // 1. Jika transaksi menyimpan array items (multi-produk dalam 1 transaksi)
+  if (Array.isArray(sale.items) && sale.items.length > 0) {
+    return sale.items.map((it) => ({
+      productId: it.productId || it.id,
+      persamaanHp: it.persamaanHp || it.productName || it.name || '',
+      qty: Number(it.qty || it.jumlah || 1),
+      price: Number(it.price || it.harga || 0),
+      hpp: Number(it.hpp || 0)
+    }));
+  }
+
+  // 2. Jika transaksi menyimpan 1 produk langsung di objek sale
+  return [
+    {
+      productId: sale.productId || sale.idProduk,
+      persamaanHp: sale.persamaanHp || sale.productName || sale.name || '',
+      qty: Number(sale.qty || sale.jumlah || 1),
+      price: Number(sale.price || sale.harga || 0),
+      hpp: Number(sale.hpp || 0)
+    }
+  ];
+}
+
 // --- KALKULASI RINGKASAN KEUANGAN ---
 function calculateFinanceSummary(products, expenses, incomes, sales) {
   // 1. Nilai Aset Stok Layak
   const totalAssetValue = products.reduce(
-    (sum, p) => sum + (Number(p.stock || 0) * Number(p.hpp || 0)),
+    (sum, p) => sum + Number(p.stock || 0) * Number(p.hpp || 0),
     0
   );
 
-  // 2. Filter hanya transaksi penjualan OFFLINE
-  const offlineSales = (sales || []).filter((s) => {
-    const channel = String(s.tipe || s.type || s.channel || s.jenis || '').toLowerCase();
-    return channel === 'offline';
+  // 2. Hitung Omset & HPP khusus dari Penjualan Offline berdasarkan harga di Katalog Produk
+  let offlineTurnover = 0;
+  let totalCogsSales = 0;
+
+  const offlineSales = (sales || []).filter(isOfflineSale);
+
+  offlineSales.forEach((sale) => {
+    const status = String(sale.status || '').toLowerCase();
+    if (status === 'batal' || status === 'cancelled') return;
+
+    const items = extractSaleItems(sale);
+    items.forEach((item) => {
+      const qty = Number(item.qty || 0);
+      if (qty <= 0) return;
+
+      const catalogProd = findCatalogProduct(products, item);
+      const unitPrice = catalogProd ? Number(catalogProd.price || 0) : Number(item.price || 0);
+      const unitHpp = catalogProd ? Number(catalogProd.hpp || 0) : Number(item.hpp || 0);
+
+      offlineTurnover += qty * unitPrice;
+      totalCogsSales += qty * unitHpp;
+    });
   });
 
-  // Hitung total omset dari penjualan offline
-  const offlineTurnover = offlineSales.reduce((sum, s) => {
-    const qty = Number(s.qty || s.jumlah || 0);
-    const price = Number(s.price || s.harga || 0);
-    const saleTotal = Number(s.total ?? s.totalPrice ?? s.amount ?? s.nominal ?? (qty * price));
-    return sum + (saleTotal || 0);
-  }, 0);
-
-  // Hitung total modal (HPP) dari barang yang terjual secara offline
-  const totalCogsSales = offlineSales.reduce((sum, s) => {
-    if (s.totalHpp !== undefined) return sum + Number(s.totalHpp || 0);
-
-    const qty = Number(s.qty || s.jumlah || 1);
-    let itemHpp = Number(s.hpp || 0);
-
-    // Fallback: ambil HPP dari master produk jika tidak tersimpan di record penjualan
-    if (!itemHpp && (s.productId || s.productName || s.name)) {
-      const matchedProduct = products.find(
-        (p) =>
-          (s.productId && String(p.id) === String(s.productId)) ||
-          (p.name && p.name === (s.productName || s.name))
-      );
-      if (matchedProduct) itemHpp = Number(matchedProduct.hpp || 0);
-    }
-
-    return sum + (qty * itemHpp);
-  }, 0);
-
+  <div class="flex justify-between items-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+    <span class="text-xs font-bold text-emerald-800">Omset Penjualan Offline</span>
+    <span id="finOfflineSalesNominal" class="text-sm font-extrabold text-emerald-600">Rp 0</span>
+  </div>
+  
   // 3. Total Pendapatan Lain
   const totalOtherIncome = incomes.reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
 
   // 4. Omset Penjualan = Penjualan Offline + Pendapatan Lain
   const totalTurnover = offlineTurnover + totalOtherIncome;
 
-  // 5. Laba Kotor = Total Omset - HPP Penjualan Offline
+  // 5. Laba Kotor = Total Omset - Total HPP Terjual Offline
   const grossProfit = totalTurnover - totalCogsSales;
 
   // 6. Kerugian Barang Pecah
   const lossSupplier = products.reduce(
-    (sum, p) => sum + (Number(p.supplierDamaged || 0) * Number(p.hpp || 0)),
+    (sum, p) => sum + Number(p.supplierDamaged || 0) * Number(p.hpp || 0),
     0
   );
   const lossShipping = products.reduce(
-    (sum, p) => sum + (Number(p.shippingDamaged || 0) * Number(p.price || 0)),
+    (sum, p) => sum + Number(p.shippingDamaged || 0) * Number(p.price || 0),
     0
   );
   const totalLoss = lossSupplier + lossShipping;
 
-  // 7. Biaya Operasional & Laba Bersih (tanpa double-count pendapatan lain)
+  // 7. Biaya Operasional & Laba Bersih
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
   const netProfit = grossProfit - totalLoss - totalExpenses;
 
@@ -152,7 +196,6 @@ function calculateFinanceSummary(products, expenses, incomes, sales) {
 
 // --- RENDER HALAMAN KEUANGAN ---
 export function renderKeuanganPage(currentState = state) {
-  // Guard Clause: hentikan jika sedang di halaman lain
   if (!document.getElementById('finValAsset')) return;
 
   const products = currentState.products || [];
@@ -173,6 +216,7 @@ export function renderKeuanganPage(currentState = state) {
   setElText('finValNetProfit', formatIDR(summary.netProfit));
 
   // 2. Update Rincian Arus & Kerugian Pecah
+  setElText('finOfflineSalesNominal', formatIDR(summary.offlineTurnover));
   setElText('finTotalIncomeNominal', formatIDR(summary.totalOtherIncome));
   setElText('finLossSupplierNominal', formatIDR(summary.lossSupplier));
   setElText('finLossShippingNominal', formatIDR(summary.lossShipping));
@@ -236,7 +280,7 @@ export function renderKeuanganPage(currentState = state) {
     }
   }
 
-  // 5. Render Tabel Arsip Bulanan (7 Kolom dengan Tombol Hapus)
+  // 5. Render Tabel Arsip Bulanan (7 Kolom)
   const archiveTbody = document.getElementById('archiveTableBody');
   if (archiveTbody) {
     if (monthlyArchives.length === 0) {
@@ -246,16 +290,20 @@ export function renderKeuanganPage(currentState = state) {
       archiveTbody.innerHTML = monthlyArchives
         .map((arc, idx) => {
           const arcId = arc.id || arc.archivedAt || String(idx);
-          const extraIncomeBadge =
-            Number(arc.otherIncome || 0) > 0
-              ? `<span class="block text-[10px] text-indigo-500 font-medium">Termasuk Pend. Lain: ${formatIDR(arc.otherIncome)}</span>`
+          const detailParts = [];
+          if (Number(arc.offlineTurnover || 0) > 0) detailParts.push(`Offline: ${formatIDR(arc.offlineTurnover)}`);
+          if (Number(arc.otherIncome || 0) > 0) detailParts.push(`Lainnya: ${formatIDR(arc.otherIncome)}`);
+          const subDetail =
+            detailParts.length > 0
+              ? `<span class="block text-[10px] text-slate-400 font-normal">${detailParts.join(' + ')}</span>`
               : '';
+
           return `
             <tr class="hover:bg-slate-50 transition">
               <td class="py-3.5 px-4 font-bold text-slate-800">${arc.period}</td>
               <td class="py-3.5 px-4 text-right font-semibold text-emerald-600">
                 ${formatIDR(arc.turnover)}
-                ${extraIncomeBadge}
+                ${subDetail}
               </td>
               <td class="py-3.5 px-4 text-right font-semibold text-blue-600">${formatIDR(arc.grossProfit)}</td>
               <td class="py-3.5 px-4 text-right font-semibold text-rose-600">${formatIDR(arc.totalLoss)}</td>
@@ -423,8 +471,8 @@ document.addEventListener('submit', async (e) => {
       shippingDamaged: 0
     }));
 
-    // Kosongkan transaksi penjualan, biaya operasional & pendapatan bulan berjalan, lalu perbarui periode
-    state.sales = [];
+    // Hapus hanya penjualan offline periode berjalan (penjualan online tetap dipertahankan)
+    state.sales = (state.sales || []).filter((s) => !isOfflineSale(s));
     state.expenses = [];
     state.incomes = [];
     state.activePeriodName = nextPeriodInput;
