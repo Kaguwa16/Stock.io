@@ -1,4 +1,3 @@
-// js/pages/catatan.js
 import { state, saveState } from '../state.js';
 
 let searchKeyword = '';
