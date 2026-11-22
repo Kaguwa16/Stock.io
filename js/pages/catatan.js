@@ -2,6 +2,7 @@ import { state, saveState } from '../state.js';
 
 let searchKeyword = '';
 let selectedCategory = 'ALL';
+let activeViewingNote = null;
 
 // --- HELPER NOTIFIKASI & KEAMANAN TEKS ---
 const notify = (message, type = 'success') => {
@@ -59,6 +60,68 @@ function formatDateTime(isoString) {
   }
 }
 
+function showCenterModal(modal) {
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+}
+
+function hideCenterModal(modal) {
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  modal.style.display = 'none';
+}
+
+// --- MODAL BACA PENUH (PREVIEW) ---
+window.openViewNoteModal = function (noteId) {
+  const note = (state.notes || []).find((n) => String(n.id) === String(noteId));
+  if (!note) return;
+
+  activeViewingNote = note;
+  const modal = document.getElementById('viewNoteModal');
+  if (!modal) return;
+
+  const catBadge = document.getElementById('viewNoteCategory');
+  if (catBadge) {
+    catBadge.textContent = note.category || 'Umum';
+    catBadge.className = `inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border mb-1.5 ${getCategoryStyle(note.category)}`;
+  }
+
+  document.getElementById('viewNoteTitle').textContent = note.title || '';
+  document.getElementById('viewNoteContent').textContent = note.content || '';
+  document.getElementById('viewNoteDate').textContent = `Diperbarui: ${formatDateTime(note.updatedAt || note.createdAt)}`;
+
+  const editBtn = document.getElementById('viewNoteEditBtn');
+  if (editBtn) {
+    editBtn.onclick = () => {
+      window.closeViewNoteModal();
+      window.openEditNoteModal(note.id);
+    };
+  }
+
+  showCenterModal(modal);
+};
+
+window.closeViewNoteModal = function () {
+  activeViewingNote = null;
+  hideCenterModal(document.getElementById('viewNoteModal'));
+};
+
+window.copyCurrentNote = async function () {
+  if (!activeViewingNote) return;
+  try {
+    const textToCopy = `${activeViewingNote.title}\n\n${activeViewingNote.content}`;
+    await navigator.clipboard.writeText(textToCopy);
+    notify('Isi catatan disalin ke clipboard.');
+  } catch {
+    notify('Gagal menyalin teks.', 'error');
+  }
+};
+
 // --- MODAL HANDLERS (CREATE & EDIT) ---
 window.openCreateNoteModal = function () {
   const modal = document.getElementById('noteModal');
@@ -68,11 +131,7 @@ window.openCreateNoteModal = function () {
   document.getElementById('noteId').value = '';
   document.getElementById('noteModalTitle').textContent = 'Buat Catatan Baru';
 
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  modal.style.display = 'flex';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
+  showCenterModal(modal);
 };
 
 window.openEditNoteModal = function (noteId) {
@@ -89,20 +148,11 @@ window.openEditNoteModal = function (noteId) {
   document.getElementById('noteContent').value = note.content || '';
   document.getElementById('noteModalTitle').textContent = 'Edit Catatan';
 
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  modal.style.display = 'flex';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
+  showCenterModal(modal);
 };
 
 window.closeNoteModal = function () {
-  const modal = document.getElementById('noteModal');
-  if (!modal) return;
-
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-  modal.style.display = 'none';
+  hideCenterModal(document.getElementById('noteModal'));
 };
 
 // --- TOGGLE PIN & HAPUS CATATAN ---
@@ -127,15 +177,13 @@ window.deleteNote = async function (noteId) {
   notify('Catatan berhasil dihapus.');
 };
 
-// --- RENDER DAFTAR CATATAN ---
+// --- RENDER DAFTAR CATATAN (KOTAK SERAGAM & TERPOTONG RAPI) ---
 export function renderCatatanPage(currentState = state) {
   const grid = document.getElementById('notesGridContainer');
-  // Guard Clause: hentikan jika sedang berada di halaman HTML selain catatan.html
   if (!grid) return;
 
   const allNotes = currentState.notes || [];
 
-  // Filter lokal berdasarkan pencarian dan kategori (tanpa memakan kuota Firestore)
   const filteredNotes = allNotes
     .filter((note) => {
       const matchCategory = selectedCategory === 'ALL' || note.category === selectedCategory;
@@ -146,7 +194,6 @@ export function renderCatatanPage(currentState = state) {
         (note.content || '').toLowerCase().includes(keyword);
       return matchCategory && matchSearch;
     })
-    // Urutkan catatan yang disematkan (pinned) di posisi paling atas
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)));
 
   const countBadge = document.getElementById('notesCountBadge');
@@ -176,29 +223,35 @@ export function renderCatatanPage(currentState = state) {
       const cardBorder = note.pinned ? 'border-amber-300 ring-1 ring-amber-200/60' : 'border-slate-200';
 
       return `
-        <div class="bg-white rounded-2xl p-5 border ${cardBorder} shadow-sm hover:shadow-md transition flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-3">
-              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">
+        <div onclick="openViewNoteModal('${note.id}')" class="h-60 bg-white rounded-2xl p-4 border ${cardBorder} shadow-sm hover:shadow-md hover:border-indigo-300 transition cursor-pointer flex flex-col justify-between overflow-hidden group">
+          <div class="overflow-hidden">
+            <div class="flex items-center justify-between gap-2 mb-2.5">
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border truncate ${badgeStyle}">
                 ${escapeHTML(note.category || 'Umum')}
               </span>
-              <button onclick="togglePinNote('${note.id}')" title="${note.pinned ? 'Lepas Sematan' : 'Sematkan Catatan'}" class="w-7 h-7 rounded-lg border flex items-center justify-center transition text-xs ${pinBtnStyle}">
+              <button onclick="event.stopPropagation(); togglePinNote('${note.id}')" title="${note.pinned ? 'Lepas Sematan' : 'Sematkan Catatan'}" class="w-7 h-7 shrink-0 rounded-lg border flex items-center justify-center transition text-xs ${pinBtnStyle}">
                 <i class="fa-solid fa-thumbtack"></i>
               </button>
             </div>
-            <h3 class="font-bold text-slate-800 text-sm mb-2 leading-snug">${escapeHTML(note.title)}</h3>
-            <p class="text-xs text-slate-600 whitespace-pre-line leading-relaxed break-words">${escapeHTML(note.content)}</p>
+
+            <h3 class="font-bold text-slate-800 text-sm mb-1.5 line-clamp-1 group-hover:text-indigo-600 transition">
+              ${escapeHTML(note.title)}
+            </h3>
+
+            <p class="text-xs text-slate-500 whitespace-pre-line leading-relaxed break-words line-clamp-4 overflow-hidden">
+              ${escapeHTML(note.content)}
+            </p>
           </div>
 
-          <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-[10px] text-slate-400">
+          <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between shrink-0">
+            <span class="text-[10px] text-slate-400 truncate">
               <i class="fa-regular fa-clock mr-1"></i>${formatDateTime(note.updatedAt || note.createdAt)}
             </span>
-            <div class="flex items-center space-x-1">
-              <button onclick="openEditNoteModal('${note.id}')" title="Edit Catatan" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition">
-                <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
+            <div class="flex items-center space-x-1 shrink-0">
+              <button onclick="event.stopPropagation(); openEditNoteModal('${note.id}')" title="Edit Catatan" class="px-2 py-1 rounded-lg text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 transition">
+                <i class="fa-solid fa-pen-to-square mr-0.5"></i>Edit
               </button>
-              <button onclick="deleteNote('${note.id}')" title="Hapus Catatan" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
+              <button onclick="event.stopPropagation(); deleteNote('${note.id}')" title="Hapus Catatan" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -242,7 +295,6 @@ document.addEventListener('submit', async (e) => {
     const now = new Date().toISOString();
 
     if (editId) {
-      // Mode Edit Catatan
       state.notes = (state.notes || []).map((n) =>
         String(n.id) === String(editId)
           ? { ...n, title, category, pinned, content, updatedAt: now }
@@ -250,7 +302,6 @@ document.addEventListener('submit', async (e) => {
       );
       notify('Perubahan catatan berhasil disimpan.');
     } else {
-      // Mode Buat Catatan Baru
       const newNote = {
         id: Date.now().toString(),
         title,
