@@ -62,26 +62,24 @@ function formatDateTime(isoString) {
 
 function showCenterModal(modal) {
   if (!modal) return;
+  modal.style.display = '';
   modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  modal.style.display = 'flex';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
+  modal.classList.add('flex', 'items-center', 'justify-center');
 }
 
 function hideCenterModal(modal) {
   if (!modal) return;
+  modal.style.display = '';
   modal.classList.add('hidden');
   modal.classList.remove('flex');
-  modal.style.display = 'none';
 }
 
-// --- HELPER GLOBAL MODAL (Agar onclick="closeModal('deleteNoteModal')" selalu berjalan) ---
-window.openModal = window.openModal || function (modalId) {
+// --- OVERRIDE GLOBAL MODAL (Agar tombol Batal & klik backdrop selalu menutup modal) ---
+window.openModal = function (modalId) {
   showCenterModal(document.getElementById(modalId));
 };
 
-window.closeModal = window.closeModal || function (modalId) {
+window.closeModal = function (modalId) {
   hideCenterModal(document.getElementById(modalId));
 };
 
@@ -191,6 +189,10 @@ window.deleteNote = function (noteId) {
   }
 
   showCenterModal(document.getElementById('deleteNoteModal'));
+};
+
+window.closeDeleteNoteModal = function () {
+  hideCenterModal(document.getElementById('deleteNoteModal'));
 };
 
 window.confirmDeleteNote = async function () {
