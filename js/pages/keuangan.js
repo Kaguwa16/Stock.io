@@ -68,15 +68,65 @@ window.closeModal = function (modalId) {
   modal.style.display = 'none';
 };
 
-// --- DETEKSI & PENCOCOKAN PENJUALAN OFFLINE DENGAN KATALOG PRODUK ---
+// --- DETEKSI TRANSAKSI OFFLINE & PENCOCOKAN KE KATALOG PRODUK ---
 function isOfflineSale(sale) {
-  const tipe = String(sale.tipe || sale.type || sale.channel || sale.jenis || '').toLowerCase().trim();
-  const marketplace = String(sale.marketplace || '').toLowerCase().trim();
-  return tipe === 'offline' || marketplace === 'toko langsung' || marketplace === 'offline';
+  if (!sale || typeof sale !== 'object') return false;
+  if (sale.isOffline === true) return true;
+
+  const fields = [
+    sale.tipe,
+    sale.type,
+    sale.channel,
+    sale.jenis,
+    sale.kategori,
+    sale.mode,
+    sale.marketplace,
+    sale.platform,
+    sale.toko
+  ];
+
+  return fields.some((val) => {
+    const str = String(val || '').toLowerCase().trim();
+    return str === 'offline' || str === 'toko langsung' || str.includes('offline');
+  });
 }
 
-function findCatalogProduct(products, item) {
-  const targetId = item.productId || item.idProduk || item.catalogId;
+function getProductName(product) {
+  return String(product.name || product.nama || product.model || product.tipe || '')
+    .trim()
+    .toLowerCase();
+}
+
+function getProductPrice(product) {
+  return Number(product.price ?? product.harga ?? product.hargaJual ?? 0);
+}
+
+function getProductHpp(product) {
+  return Number(product.hpp ?? product.modal ?? product.hargaBeli ?? 0);
+}
+
+// Membersihkan teks seperti "INFINIX HOT 10 x1" -> { cleanName: "infinix hot 10", parsedQty: 1 }
+function parseNameAndQty(rawText) {
+  const str = String(rawText || '').trim();
+  const match = str.match(/^(.*?)\s*[xX×]\s*(\d+)$/);
+  if (match) {
+    return {
+      cleanName: match[1].trim().toLowerCase(),
+      parsedQty: Number(match[2])
+    };
+  }
+  return {
+    cleanName: str.toLowerCase(),
+    parsedQty: null
+  };
+}
+
+function findCatalogProduct(products, itemObj) {
+  if (!itemObj || typeof itemObj !== 'object') return null;
+
+  // 1. Cek berdasarkan ID produk
+  const targetId =
+    itemObj.productId || itemObj.idProduk || itemObj.produkId || itemObj.catalogId || itemObj.itemId;
   if (targetId) {
     const byId = products.find(
       (p) => String(p.id) === String(targetId) || String(p.docId) === String(targetId)
@@ -84,37 +134,81 @@ function findCatalogProduct(products, item) {
     if (byId) return byId;
   }
 
-  const rawName = String(
-    item.persamaanHp || item.productName || item.name || item.namaProduk || ''
-  ).trim().toLowerCase();
+  // 2. Cek properti nama produk yang umum digunakan
+  const candidateKeys = [
+    itemObj.persamaanHp,
+    itemObj.persamaan,
+    itemObj.productName,
+    itemObj.namaProduk,
+    itemObj.name,
+    itemObj.nama,
+    itemObj.model,
+    itemObj.tipeHp,
+    itemObj.tipe,
+    itemObj.produk,
+    itemObj.barang,
+    itemObj.title
+  ];
 
-  if (!rawName) return null;
-
-  return (
-    products.find((p) => String(p.name || '').trim().toLowerCase() === rawName) || null
-  );
-}
-
-function extractSaleItems(sale) {
-  // 1. Jika transaksi menyimpan array items (multi-produk dalam 1 transaksi)
-  if (Array.isArray(sale.items) && sale.items.length > 0) {
-    return sale.items.map((it) => ({
-      productId: it.productId || it.id,
-      persamaanHp: it.persamaanHp || it.productName || it.name || '',
-      qty: Number(it.qty || it.jumlah || 1),
-      price: Number(it.price || it.harga || 0),
-      hpp: Number(it.hpp || 0)
-    }));
+  for (const val of candidateKeys) {
+    if (!val) continue;
+    const { cleanName } = parseNameAndQty(val);
+    if (!cleanName) continue;
+    const found = products.find((p) => getProductName(p) === cleanName);
+    if (found) return found;
   }
 
-  // 2. Jika transaksi menyimpan 1 produk langsung di objek sale
+  // 3. Fallback: Pindai seluruh nilai string pada objek untuk dicocokkan dengan nama di katalog
+  const ignoredKeys = new Set([
+    'id', 'docId', 'tanggal', 'date', 'status', 'marketplace', 'platform',
+    'resi', 'tipe', 'type', 'channel', 'jenis', 'catatan', 'note', 'createdAt', 'updatedAt'
+  ]);
+
+  for (const [key, val] of Object.entries(itemObj)) {
+    if (ignoredKeys.has(key) || typeof val !== 'string') continue;
+    const { cleanName } = parseNameAndQty(val);
+    if (!cleanName) continue;
+    const found = products.find((p) => getProductName(p) === cleanName);
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function extractSaleEntries(sale) {
+  // Cek jika transaksi menyimpan daftar barang dalam bentuk array (items / products / produk / barang / details)
+  const itemList =
+    (Array.isArray(sale.items) && sale.items) ||
+    (Array.isArray(sale.products) && sale.products) ||
+    (Array.isArray(sale.produk) && sale.produk) ||
+    (Array.isArray(sale.barang) && sale.barang) ||
+    (Array.isArray(sale.details) && sale.details) ||
+    null;
+
+  if (itemList && itemList.length > 0) {
+    return itemList.map((it) => {
+      const rawName =
+        it.persamaanHp || it.persamaan || it.productName || it.namaProduk || it.name || it.nama || it.model || '';
+      const { parsedQty } = parseNameAndQty(rawName);
+      const explicitQty = it.qty ?? it.jumlah ?? it.pcs ?? it.quantity ?? it.count;
+      return {
+        rawObj: it,
+        qty: Number(explicitQty ?? parsedQty ?? 1)
+      };
+    });
+  }
+
+  // Jika transaksi menyimpan 1 produk langsung di objek utama sale
+  const rawName =
+    sale.persamaanHp || sale.persamaan || sale.productName || sale.namaProduk || sale.name || sale.nama || sale.model || '';
+  const { parsedQty } = parseNameAndQty(rawName);
+  const explicitQty =
+    sale.qty ?? sale.jumlah ?? sale.totalPcs ?? sale.jumlahPcs ?? sale.pcs ?? sale.quantity;
+
   return [
     {
-      productId: sale.productId || sale.idProduk,
-      persamaanHp: sale.persamaanHp || sale.productName || sale.name || '',
-      qty: Number(sale.qty || sale.jumlah || 1),
-      price: Number(sale.price || sale.harga || 0),
-      hpp: Number(sale.hpp || 0)
+      rawObj: sale,
+      qty: Number(explicitQty ?? parsedQty ?? 1)
     }
   ];
 }
@@ -123,7 +217,7 @@ function extractSaleItems(sale) {
 function calculateFinanceSummary(products, expenses, incomes, sales) {
   // 1. Nilai Aset Stok Layak
   const totalAssetValue = products.reduce(
-    (sum, p) => sum + Number(p.stock || 0) * Number(p.hpp || 0),
+    (sum, p) => sum + Number(p.stock || 0) * getProductHpp(p),
     0
   );
 
@@ -133,24 +227,30 @@ function calculateFinanceSummary(products, expenses, incomes, sales) {
 
   const offlineSales = (sales || []).filter(isOfflineSale);
 
+  // Log diagnostik di Console (F12) untuk memastikan struktur data sales terbaca
+  console.log('[Keuangan] Total sales:', (sales || []).length, '| Offline sales:', offlineSales);
+
   offlineSales.forEach((sale) => {
     const status = String(sale.status || '').toLowerCase();
     if (status === 'batal' || status === 'cancelled') return;
 
-    const items = extractSaleItems(sale);
-    items.forEach((item) => {
-      const qty = Number(item.qty || 0);
+    const entries = extractSaleEntries(sale);
+    entries.forEach(({ rawObj, qty }) => {
       if (qty <= 0) return;
 
-      const catalogProd = findCatalogProduct(products, item);
-      const unitPrice = catalogProd ? Number(catalogProd.price || 0) : Number(item.price || 0);
-      const unitHpp = catalogProd ? Number(catalogProd.hpp || 0) : Number(item.hpp || 0);
+      const catalogProd = findCatalogProduct(products, rawObj);
+      const unitPrice = catalogProd
+        ? getProductPrice(catalogProd)
+        : Number(rawObj.price ?? rawObj.harga ?? 0);
+      const unitHpp = catalogProd
+        ? getProductHpp(catalogProd)
+        : Number(rawObj.hpp ?? rawObj.modal ?? 0);
 
       offlineTurnover += qty * unitPrice;
       totalCogsSales += qty * unitHpp;
     });
   });
- 
+
   // 3. Total Pendapatan Lain
   const totalOtherIncome = incomes.reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
 
@@ -162,11 +262,11 @@ function calculateFinanceSummary(products, expenses, incomes, sales) {
 
   // 6. Kerugian Barang Pecah
   const lossSupplier = products.reduce(
-    (sum, p) => sum + Number(p.supplierDamaged || 0) * Number(p.hpp || 0),
+    (sum, p) => sum + Number(p.supplierDamaged || 0) * getProductHpp(p),
     0
   );
   const lossShipping = products.reduce(
-    (sum, p) => sum + Number(p.shippingDamaged || 0) * Number(p.price || 0),
+    (sum, p) => sum + Number(p.shippingDamaged || 0) * getProductPrice(p),
     0
   );
   const totalLoss = lossSupplier + lossShipping;
