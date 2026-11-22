@@ -240,6 +240,26 @@
       </div>
     </div>
   </div>
+
+  <!-- Konfirmasi Hapus Catatan -->
+  <div id="deleteNoteModal" onclick="if(event.target === this) closeModal('deleteNoteModal')" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-100 mx-auto my-auto">
+      <div class="p-6 text-center space-y-4">
+        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-lg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Hapus Catatan?</h3>
+          <p id="deleteNoteName" class="text-xs text-slate-500 mt-1">Catatan ini akan dihapus permanen.</p>
+        </div>
+        <input type="hidden" id="deleteNoteId">
+        <div class="flex items-center justify-center space-x-2 pt-2">
+          <button type="button" onclick="closeModal('deleteNoteModal')" class="flex-1 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200 transition">Batal</button>
+          <button type="button" onclick="confirmDeleteNote()" class="flex-1 px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-semibold hover:bg-rose-700 transition">Hapus</button>
+        </div>
+      </div>
+    </div>
+  </div>
  
   <script type="module" src="js/main.js"></script>
 </body>
