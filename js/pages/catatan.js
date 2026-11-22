@@ -1,3 +1,4 @@
+// js/pages/catatan.js
 import { state, saveState } from '../state.js';
 
 let searchKeyword = '';
@@ -76,6 +77,15 @@ function hideCenterModal(modal) {
   modal.style.display = 'none';
 }
 
+// --- HELPER GLOBAL MODAL (Agar onclick="closeModal('deleteNoteModal')" selalu berjalan) ---
+window.openModal = window.openModal || function (modalId) {
+  showCenterModal(document.getElementById(modalId));
+};
+
+window.closeModal = window.closeModal || function (modalId) {
+  hideCenterModal(document.getElementById(modalId));
+};
+
 // --- MODAL BACA PENUH (PREVIEW) ---
 window.openViewNoteModal = function (noteId) {
   const note = (state.notes || []).find((n) => String(n.id) === String(noteId));
@@ -122,7 +132,7 @@ window.copyCurrentNote = async function () {
   }
 };
 
-// --- MODAL HANDLERS (CREATE & EDIT) ---
+// --- MODAL TAMBAH & EDIT CATATAN ---
 window.openCreateNoteModal = function () {
   const modal = document.getElementById('noteModal');
   if (!modal) return;
@@ -155,7 +165,7 @@ window.closeNoteModal = function () {
   hideCenterModal(document.getElementById('noteModal'));
 };
 
-// --- TOGGLE PIN & HAPUS CATATAN ---
+// --- TOGGLE PIN CATATAN ---
 window.togglePinNote = async function (noteId) {
   state.notes = (state.notes || []).map((n) =>
     String(n.id) === String(noteId) ? { ...n, pinned: !n.pinned } : n
@@ -166,18 +176,37 @@ window.togglePinNote = async function (noteId) {
   notify('Status sematan catatan diperbarui.');
 };
 
-window.deleteNote = async function (noteId) {
+// --- BUKA MODAL KONFIRMASI HAPUS & EKSEKUSI HAPUS ---
+window.deleteNote = function (noteId) {
   if (!noteId) return;
-  if (!confirm('Hapus catatan ini secara permanen?')) return;
 
-  state.notes = (state.notes || []).filter((n) => String(n.id) !== String(noteId));
+  const note = (state.notes || []).find((n) => String(n.id) === String(noteId));
+  const idInput = document.getElementById('deleteNoteId');
+  const nameLabel = document.getElementById('deleteNoteName');
 
+  if (idInput) idInput.value = noteId;
+  if (nameLabel) {
+    nameLabel.textContent = note?.title
+      ? `Catatan "${note.title}" akan dihapus permanen.`
+      : 'Catatan ini akan dihapus permanen.';
+  }
+
+  showCenterModal(document.getElementById('deleteNoteModal'));
+};
+
+window.confirmDeleteNote = async function () {
+  const targetId = document.getElementById('deleteNoteId')?.value;
+  if (!targetId) return;
+
+  state.notes = (state.notes || []).filter((n) => String(n.id) !== String(targetId));
+
+  hideCenterModal(document.getElementById('deleteNoteModal'));
   renderCatatanPage(state);
   await saveState();
   notify('Catatan berhasil dihapus.');
 };
 
-// --- RENDER DAFTAR CATATAN (KOTAK SERAGAM & TERPOTONG RAPI) ---
+// --- RENDER DAFTAR CATATAN ---
 export function renderCatatanPage(currentState = state) {
   const grid = document.getElementById('notesGridContainer');
   if (!grid) return;
