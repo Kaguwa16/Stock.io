@@ -150,12 +150,7 @@ function calculateFinanceSummary(products, expenses, incomes, sales) {
       totalCogsSales += qty * unitHpp;
     });
   });
-
-  <div class="flex justify-between items-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-    <span class="text-xs font-bold text-emerald-800">Omset Penjualan Offline</span>
-    <span id="finOfflineSalesNominal" class="text-sm font-extrabold text-emerald-600">Rp 0</span>
-  </div>
-  
+ 
   // 3. Total Pendapatan Lain
   const totalOtherIncome = incomes.reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
 
